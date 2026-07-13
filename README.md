@@ -105,6 +105,8 @@ stt.connect(PulseSttStreamingConnectOptions.builder()
     .language("en")
     .encoding(PulseStreamEncoding.MULAW) // G.711 u-law telephony; LINEAR16 for raw PCM16
     .sampleRate(8000)                    // 8000 for telephony
+    .eouTimeoutMs(500)                   // faster end-of-utterance for agent turn-taking
+    .keywords("Smallest:6,Pulse:6")      // boost domain terms (streaming only)
     .build()).get();
 
 // feed audio as it arrives (e.g. per RTP packet), then finalize
@@ -114,8 +116,16 @@ stt.transcribeStreamingPulseSendFinalize(
         .type(PulseFinalizeSignalMessageType.FINALIZE).build()).get();
 ```
 
+Other session options on the builder: `sentenceTimestamps`, `diarize`, `redactPii`, `redactPci`,
+`punctuate`, `capitalize`, `format`, `itnNormalize`, `endpointing`, `finalizeOnWords`, `maxWords`,
+`wordTimestamps`, `vadEvents`. New server params not yet typed can be passed with
+`.additionalProperty("name", value)` — they are forwarded as query parameters.
+
 A full runnable telephony (8 kHz μ-law) example is in
 [`examples/StreamingSttTelephony.java`](examples/StreamingSttTelephony.java).
+Migrating from Azure Speech SDK? See
+[`examples/AzureStyleSttRecognizer.java`](examples/AzureStyleSttRecognizer.java) for a
+recognizing/recognized/canceled event-style wrapper.
 
 ## Status
 

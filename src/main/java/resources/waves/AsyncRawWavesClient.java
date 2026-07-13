@@ -2514,7 +2514,9 @@ public class AsyncRawWavesClient {
                                                 httpUrl.addQueryParameter(_key, _value);
                                               } );
                                             }
-                                            RequestBody body = new InputStreamRequestBody(MediaType.parse("application/octet-stream"), new ByteArrayInputStream(request.getBody()));
+                                            // byte[]-backed body so the RetryInterceptor can re-send it; a one-shot
+                                            // InputStream body would be empty on the retry attempt
+                                            RequestBody body = RequestBody.create(request.getBody(), MediaType.parse("application/octet-stream"));
                                             Request.Builder _requestBuilder = new Request.Builder()
                                               .url(httpUrl.build())
                                               .method("POST", body)

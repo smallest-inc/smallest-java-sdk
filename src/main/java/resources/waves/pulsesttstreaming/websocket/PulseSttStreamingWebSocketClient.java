@@ -124,6 +124,54 @@ public class PulseSttStreamingWebSocketClient implements AutoCloseable {
     if (options.getVadEvents() != null && options.getVadEvents().isPresent()) {
       urlBuilder.addQueryParameter("vad_events", String.valueOf(options.getVadEvents().get()));
     }
+    if (options.getSentenceTimestamps() != null && options.getSentenceTimestamps().isPresent()) {
+      urlBuilder.addQueryParameter("sentence_timestamps", String.valueOf(options.getSentenceTimestamps().get()));
+    }
+    if (options.getRedactPii() != null && options.getRedactPii().isPresent()) {
+      urlBuilder.addQueryParameter("redact_pii", String.valueOf(options.getRedactPii().get()));
+    }
+    if (options.getRedactPci() != null && options.getRedactPci().isPresent()) {
+      urlBuilder.addQueryParameter("redact_pci", String.valueOf(options.getRedactPci().get()));
+    }
+    if (options.getFormat() != null && options.getFormat().isPresent()) {
+      urlBuilder.addQueryParameter("format", String.valueOf(options.getFormat().get()));
+    }
+    if (options.getPunctuate() != null && options.getPunctuate().isPresent()) {
+      urlBuilder.addQueryParameter("punctuate", String.valueOf(options.getPunctuate().get()));
+    }
+    if (options.getCapitalize() != null && options.getCapitalize().isPresent()) {
+      urlBuilder.addQueryParameter("capitalize", String.valueOf(options.getCapitalize().get()));
+    }
+    if (options.getEouTimeoutMs() != null && options.getEouTimeoutMs().isPresent()) {
+      urlBuilder.addQueryParameter("eou_timeout_ms", String.valueOf(options.getEouTimeoutMs().get()));
+    }
+    if (options.getEndpointing() != null && options.getEndpointing().isPresent()) {
+      urlBuilder.addQueryParameter("endpointing", String.valueOf(options.getEndpointing().get()));
+    }
+    if (options.getDiarize() != null && options.getDiarize().isPresent()) {
+      urlBuilder.addQueryParameter("diarize", String.valueOf(options.getDiarize().get()));
+    }
+    if (options.getKeywords() != null && options.getKeywords().isPresent()) {
+      urlBuilder.addQueryParameter("keywords", options.getKeywords().get());
+    }
+    if (options.getItnNormalize() != null && options.getItnNormalize().isPresent()) {
+      urlBuilder.addQueryParameter("itn_normalize", String.valueOf(options.getItnNormalize().get()));
+    }
+    if (options.getFinalizeOnWords() != null && options.getFinalizeOnWords().isPresent()) {
+      urlBuilder.addQueryParameter("finalize_on_words", String.valueOf(options.getFinalizeOnWords().get()));
+    }
+    if (options.getMaxWords() != null && options.getMaxWords().isPresent()) {
+      urlBuilder.addQueryParameter("max_words", String.valueOf(options.getMaxWords().get()));
+    }
+    // Escape hatch: forward any additionalProperty(...) entries as query parameters so
+    // new server-side session params are usable before they get typed options.
+    if (options.getAdditionalProperties() != null) {
+      options.getAdditionalProperties().forEach((key, value) -> {
+        if (value != null) {
+          urlBuilder.addQueryParameter(key, String.valueOf(value));
+        }
+      });
+    }
     Request.Builder requestBuilder = new Request.Builder().url(urlBuilder.build());
     clientOptions.headers((RequestOptions) null).forEach(requestBuilder::addHeader);
     final Request request = requestBuilder.build();
@@ -188,7 +236,9 @@ public class PulseSttStreamingWebSocketClient implements AutoCloseable {
    * Disconnects the WebSocket connection and releases resources.
    */
   public void disconnect() {
-    reconnectingListener.disconnect();
+    if (reconnectingListener != null) {
+      reconnectingListener.disconnect();
+    }
     if (timeoutExecutor != null) {
       timeoutExecutor.shutdownNow();
       timeoutExecutor = null;
@@ -360,7 +410,10 @@ public class PulseSttStreamingWebSocketClient implements AutoCloseable {
       if (node == null || node.isNull()) {
         throw new IllegalArgumentException("Received null or invalid JSON message");
       }
-      if (node.has("type")
+      // Dispatch VAD events on the `type` discriminator value; presence checks alone
+      // cannot distinguish speech_started from speech_ended (identical field sets).
+      String messageType = node.has("type") ? node.get("type").asText() : null;
+      if ("speech_started".equals(messageType)
       && node.has("session_id")
       && node.has("timestamp")) {
         PulseSpeechStartedEventMessage receiveSpeechStartedStreamingPulseHandlerEvent = null;
@@ -375,7 +428,7 @@ public class PulseSttStreamingWebSocketClient implements AutoCloseable {
           return;
         }
       }
-      if (node.has("type")
+      if ("speech_ended".equals(messageType)
       && node.has("session_id")
       && node.has("timestamp")) {
         PulseSpeechEndedEventMessage receiveSpeechEndedStreamingPulseHandlerEvent = null;

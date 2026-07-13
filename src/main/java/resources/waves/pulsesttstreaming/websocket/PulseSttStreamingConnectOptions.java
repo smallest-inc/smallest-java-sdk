@@ -16,6 +16,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.Nulls;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import java.lang.Boolean;
 import java.lang.Integer;
 import java.lang.Object;
 import java.lang.String;
@@ -39,17 +40,62 @@ public final class PulseSttStreamingConnectOptions {
 
   private final Optional<PulseStreamVadEvents> vadEvents;
 
+  private final Optional<Boolean> sentenceTimestamps;
+
+  private final Optional<Boolean> redactPii;
+
+  private final Optional<Boolean> redactPci;
+
+  private final Optional<Boolean> format;
+
+  private final Optional<Boolean> punctuate;
+
+  private final Optional<Boolean> capitalize;
+
+  private final Optional<Integer> eouTimeoutMs;
+
+  private final Optional<Boolean> endpointing;
+
+  private final Optional<Boolean> diarize;
+
+  private final Optional<String> keywords;
+
+  private final Optional<Boolean> itnNormalize;
+
+  private final Optional<Boolean> finalizeOnWords;
+
+  private final Optional<Integer> maxWords;
+
   private final Map<String, Object> additionalProperties;
 
   private PulseSttStreamingConnectOptions(Optional<String> language,
       Optional<PulseStreamEncoding> encoding, Optional<Integer> sampleRate,
       Optional<PulseStreamWordTimestamps> wordTimestamps, Optional<PulseStreamVadEvents> vadEvents,
+      Optional<Boolean> sentenceTimestamps, Optional<Boolean> redactPii,
+      Optional<Boolean> redactPci, Optional<Boolean> format, Optional<Boolean> punctuate,
+      Optional<Boolean> capitalize, Optional<Integer> eouTimeoutMs, Optional<Boolean> endpointing,
+      Optional<Boolean> diarize,
+      Optional<String> keywords, Optional<Boolean> itnNormalize,
+      Optional<Boolean> finalizeOnWords, Optional<Integer> maxWords,
       Map<String, Object> additionalProperties) {
     this.language = language;
     this.encoding = encoding;
     this.sampleRate = sampleRate;
     this.wordTimestamps = wordTimestamps;
     this.vadEvents = vadEvents;
+    this.sentenceTimestamps = sentenceTimestamps;
+    this.redactPii = redactPii;
+    this.redactPci = redactPci;
+    this.format = format;
+    this.punctuate = punctuate;
+    this.capitalize = capitalize;
+    this.eouTimeoutMs = eouTimeoutMs;
+    this.endpointing = endpointing;
+    this.diarize = diarize;
+    this.keywords = keywords;
+    this.itnNormalize = itnNormalize;
+    this.finalizeOnWords = finalizeOnWords;
+    this.maxWords = maxWords;
     this.additionalProperties = additionalProperties;
   }
 
@@ -93,6 +139,110 @@ public final class PulseSttStreamingConnectOptions {
     return vadEvents;
   }
 
+  /**
+   * @return Include sentence-level timestamps (utterances) in transcription.
+   */
+  @JsonProperty("sentence_timestamps")
+  public Optional<Boolean> getSentenceTimestamps() {
+    return sentenceTimestamps;
+  }
+
+  /**
+   * @return Redact personally identifiable information (name, address, etc.) in finalized transcripts.
+   */
+  @JsonProperty("redact_pii")
+  public Optional<Boolean> getRedactPii() {
+    return redactPii;
+  }
+
+  /**
+   * @return Redact payment card information (card number, CVV, etc.) in finalized transcripts.
+   */
+  @JsonProperty("redact_pci")
+  public Optional<Boolean> getRedactPci() {
+    return redactPci;
+  }
+
+  /**
+   * @return Master formatting switch. When false, forces punctuate=false, capitalize=false and disables ITN.
+   */
+  @JsonProperty("format")
+  public Optional<Boolean> getFormat() {
+    return format;
+  }
+
+  /**
+   * @return When false, strips end-of-sentence punctuation from finalized transcripts.
+   */
+  @JsonProperty("punctuate")
+  public Optional<Boolean> getPunctuate() {
+    return punctuate;
+  }
+
+  /**
+   * @return When false, lowercases the entire transcript output.
+   */
+  @JsonProperty("capitalize")
+  public Optional<Boolean> getCapitalize() {
+    return capitalize;
+  }
+
+  /**
+   * @return Milliseconds of trailing silence before the transcript is flushed as final (default 800, range 100-10000). Lower for fast voice-agent turn-taking.
+   */
+  @JsonProperty("eou_timeout_ms")
+  public Optional<Integer> getEouTimeoutMs() {
+    return eouTimeoutMs;
+  }
+
+  /**
+   * @return Finalize transcripts on trailing-silence detection (default true). eou_timeout_ms acts as the ceiling when enabled.
+   */
+  @JsonProperty("endpointing")
+  public Optional<Boolean> getEndpointing() {
+    return endpointing;
+  }
+
+  /**
+   * @return Enable speaker diarization to identify different speakers in the audio.
+   */
+  @JsonProperty("diarize")
+  public Optional<Boolean> getDiarize() {
+    return diarize;
+  }
+
+  /**
+   * @return Keyword boosting for this session (WebSocket only). Comma-separated <code>WORD:INTENSIFIER</code> entries, e.g. <code>NVIDIA:6,Jensen</code>. Intensifier defaults to 1.0; recommended around 3-6.
+   */
+  @JsonProperty("keywords")
+  public Optional<String> getKeywords() {
+    return keywords;
+  }
+
+  /**
+   * @return Enable Inverse Text Normalization (numbers, dates, currencies to written form) in finalized transcripts.
+   */
+  @JsonProperty("itn_normalize")
+  public Optional<Boolean> getItnNormalize() {
+    return itnNormalize;
+  }
+
+  /**
+   * @return When false, disables automatic word-count-based finalization; control finalization via the finalize message.
+   */
+  @JsonProperty("finalize_on_words")
+  public Optional<Boolean> getFinalizeOnWords() {
+    return finalizeOnWords;
+  }
+
+  /**
+   * @return Maximum number of words before forced finalization.
+   */
+  @JsonProperty("max_words")
+  public Optional<Integer> getMaxWords() {
+    return maxWords;
+  }
+
   @java.lang.Override
   public boolean equals(Object other) {
     if (this == other) return true;
@@ -105,12 +255,12 @@ public final class PulseSttStreamingConnectOptions {
   }
 
   private boolean equalTo(PulseSttStreamingConnectOptions other) {
-    return language.equals(other.language) && encoding.equals(other.encoding) && sampleRate.equals(other.sampleRate) && wordTimestamps.equals(other.wordTimestamps) && vadEvents.equals(other.vadEvents);
+    return language.equals(other.language) && encoding.equals(other.encoding) && sampleRate.equals(other.sampleRate) && wordTimestamps.equals(other.wordTimestamps) && vadEvents.equals(other.vadEvents) && sentenceTimestamps.equals(other.sentenceTimestamps) && redactPii.equals(other.redactPii) && redactPci.equals(other.redactPci) && format.equals(other.format) && punctuate.equals(other.punctuate) && capitalize.equals(other.capitalize) && eouTimeoutMs.equals(other.eouTimeoutMs) && endpointing.equals(other.endpointing) && diarize.equals(other.diarize) && keywords.equals(other.keywords) && itnNormalize.equals(other.itnNormalize) && finalizeOnWords.equals(other.finalizeOnWords) && maxWords.equals(other.maxWords);
   }
 
   @java.lang.Override
   public int hashCode() {
-    return Objects.hash(this.language, this.encoding, this.sampleRate, this.wordTimestamps, this.vadEvents);
+    return Objects.hash(this.language, this.encoding, this.sampleRate, this.wordTimestamps, this.vadEvents, this.sentenceTimestamps, this.redactPii, this.redactPci, this.format, this.punctuate, this.capitalize, this.eouTimeoutMs, this.endpointing, this.diarize, this.keywords, this.itnNormalize, this.finalizeOnWords, this.maxWords);
   }
 
   @java.lang.Override
@@ -136,6 +286,32 @@ public final class PulseSttStreamingConnectOptions {
 
     private Optional<PulseStreamVadEvents> vadEvents = Optional.empty();
 
+    private Optional<Boolean> sentenceTimestamps = Optional.empty();
+
+    private Optional<Boolean> redactPii = Optional.empty();
+
+    private Optional<Boolean> redactPci = Optional.empty();
+
+    private Optional<Boolean> format = Optional.empty();
+
+    private Optional<Boolean> punctuate = Optional.empty();
+
+    private Optional<Boolean> capitalize = Optional.empty();
+
+    private Optional<Integer> eouTimeoutMs = Optional.empty();
+
+    private Optional<Boolean> endpointing = Optional.empty();
+
+    private Optional<Boolean> diarize = Optional.empty();
+
+    private Optional<String> keywords = Optional.empty();
+
+    private Optional<Boolean> itnNormalize = Optional.empty();
+
+    private Optional<Boolean> finalizeOnWords = Optional.empty();
+
+    private Optional<Integer> maxWords = Optional.empty();
+
     @JsonAnySetter
     private Map<String, Object> additionalProperties = new HashMap<>();
 
@@ -148,6 +324,19 @@ public final class PulseSttStreamingConnectOptions {
       sampleRate(other.getSampleRate());
       wordTimestamps(other.getWordTimestamps());
       vadEvents(other.getVadEvents());
+      sentenceTimestamps(other.getSentenceTimestamps());
+      redactPii(other.getRedactPii());
+      redactPci(other.getRedactPci());
+      format(other.getFormat());
+      punctuate(other.getPunctuate());
+      capitalize(other.getCapitalize());
+      eouTimeoutMs(other.getEouTimeoutMs());
+      endpointing(other.getEndpointing());
+      diarize(other.getDiarize());
+      keywords(other.getKeywords());
+      itnNormalize(other.getItnNormalize());
+      finalizeOnWords(other.getFinalizeOnWords());
+      maxWords(other.getMaxWords());
       return this;
     }
 
@@ -236,8 +425,229 @@ public final class PulseSttStreamingConnectOptions {
       return this;
     }
 
+    /**
+     * <p>Include sentence-level timestamps (utterances) in transcription.</p>
+     */
+    @JsonSetter(
+        value = "sentence_timestamps",
+        nulls = Nulls.SKIP
+    )
+    public Builder sentenceTimestamps(Optional<Boolean> sentenceTimestamps) {
+      this.sentenceTimestamps = sentenceTimestamps;
+      return this;
+    }
+
+    public Builder sentenceTimestamps(Boolean sentenceTimestamps) {
+      this.sentenceTimestamps = Optional.ofNullable(sentenceTimestamps);
+      return this;
+    }
+
+    /**
+     * <p>Redact personally identifiable information in finalized transcripts.</p>
+     */
+    @JsonSetter(
+        value = "redact_pii",
+        nulls = Nulls.SKIP
+    )
+    public Builder redactPii(Optional<Boolean> redactPii) {
+      this.redactPii = redactPii;
+      return this;
+    }
+
+    public Builder redactPii(Boolean redactPii) {
+      this.redactPii = Optional.ofNullable(redactPii);
+      return this;
+    }
+
+    /**
+     * <p>Redact payment card information in finalized transcripts.</p>
+     */
+    @JsonSetter(
+        value = "redact_pci",
+        nulls = Nulls.SKIP
+    )
+    public Builder redactPci(Optional<Boolean> redactPci) {
+      this.redactPci = redactPci;
+      return this;
+    }
+
+    public Builder redactPci(Boolean redactPci) {
+      this.redactPci = Optional.ofNullable(redactPci);
+      return this;
+    }
+
+    /**
+     * <p>Master formatting switch. When false, forces punctuate=false, capitalize=false and disables ITN.</p>
+     */
+    @JsonSetter(
+        value = "format",
+        nulls = Nulls.SKIP
+    )
+    public Builder format(Optional<Boolean> format) {
+      this.format = format;
+      return this;
+    }
+
+    public Builder format(Boolean format) {
+      this.format = Optional.ofNullable(format);
+      return this;
+    }
+
+    /**
+     * <p>When false, strips end-of-sentence punctuation from finalized transcripts.</p>
+     */
+    @JsonSetter(
+        value = "punctuate",
+        nulls = Nulls.SKIP
+    )
+    public Builder punctuate(Optional<Boolean> punctuate) {
+      this.punctuate = punctuate;
+      return this;
+    }
+
+    public Builder punctuate(Boolean punctuate) {
+      this.punctuate = Optional.ofNullable(punctuate);
+      return this;
+    }
+
+    /**
+     * <p>When false, lowercases the entire transcript output.</p>
+     */
+    @JsonSetter(
+        value = "capitalize",
+        nulls = Nulls.SKIP
+    )
+    public Builder capitalize(Optional<Boolean> capitalize) {
+      this.capitalize = capitalize;
+      return this;
+    }
+
+    public Builder capitalize(Boolean capitalize) {
+      this.capitalize = Optional.ofNullable(capitalize);
+      return this;
+    }
+
+    /**
+     * <p>Milliseconds of trailing silence before the transcript is flushed as final (default 800, range 100-10000).</p>
+     */
+    @JsonSetter(
+        value = "eou_timeout_ms",
+        nulls = Nulls.SKIP
+    )
+    public Builder eouTimeoutMs(Optional<Integer> eouTimeoutMs) {
+      this.eouTimeoutMs = eouTimeoutMs;
+      return this;
+    }
+
+    public Builder eouTimeoutMs(Integer eouTimeoutMs) {
+      this.eouTimeoutMs = Optional.ofNullable(eouTimeoutMs);
+      return this;
+    }
+
+    /**
+     * <p>Finalize transcripts on trailing-silence detection (default true).</p>
+     */
+    @JsonSetter(
+        value = "endpointing",
+        nulls = Nulls.SKIP
+    )
+    public Builder endpointing(Optional<Boolean> endpointing) {
+      this.endpointing = endpointing;
+      return this;
+    }
+
+    public Builder endpointing(Boolean endpointing) {
+      this.endpointing = Optional.ofNullable(endpointing);
+      return this;
+    }
+
+    /**
+     * <p>Enable speaker diarization to identify different speakers in the audio.</p>
+     */
+    @JsonSetter(
+        value = "diarize",
+        nulls = Nulls.SKIP
+    )
+    public Builder diarize(Optional<Boolean> diarize) {
+      this.diarize = diarize;
+      return this;
+    }
+
+    public Builder diarize(Boolean diarize) {
+      this.diarize = Optional.ofNullable(diarize);
+      return this;
+    }
+
+    /**
+     * <p>Keyword boosting (WebSocket only). Comma-separated <code>WORD:INTENSIFIER</code> entries, e.g. <code>NVIDIA:6,Jensen</code>.</p>
+     */
+    @JsonSetter(
+        value = "keywords",
+        nulls = Nulls.SKIP
+    )
+    public Builder keywords(Optional<String> keywords) {
+      this.keywords = keywords;
+      return this;
+    }
+
+    public Builder keywords(String keywords) {
+      this.keywords = Optional.ofNullable(keywords);
+      return this;
+    }
+
+    /**
+     * <p>Enable Inverse Text Normalization in finalized transcripts.</p>
+     */
+    @JsonSetter(
+        value = "itn_normalize",
+        nulls = Nulls.SKIP
+    )
+    public Builder itnNormalize(Optional<Boolean> itnNormalize) {
+      this.itnNormalize = itnNormalize;
+      return this;
+    }
+
+    public Builder itnNormalize(Boolean itnNormalize) {
+      this.itnNormalize = Optional.ofNullable(itnNormalize);
+      return this;
+    }
+
+    /**
+     * <p>When false, disables automatic word-count-based finalization.</p>
+     */
+    @JsonSetter(
+        value = "finalize_on_words",
+        nulls = Nulls.SKIP
+    )
+    public Builder finalizeOnWords(Optional<Boolean> finalizeOnWords) {
+      this.finalizeOnWords = finalizeOnWords;
+      return this;
+    }
+
+    public Builder finalizeOnWords(Boolean finalizeOnWords) {
+      this.finalizeOnWords = Optional.ofNullable(finalizeOnWords);
+      return this;
+    }
+
+    /**
+     * <p>Maximum number of words before forced finalization.</p>
+     */
+    @JsonSetter(
+        value = "max_words",
+        nulls = Nulls.SKIP
+    )
+    public Builder maxWords(Optional<Integer> maxWords) {
+      this.maxWords = maxWords;
+      return this;
+    }
+
+    public Builder maxWords(Integer maxWords) {
+      this.maxWords = Optional.ofNullable(maxWords);
+      return this;
+    }
+
     public PulseSttStreamingConnectOptions build() {
-      return new PulseSttStreamingConnectOptions(language, encoding, sampleRate, wordTimestamps, vadEvents, additionalProperties);
+      return new PulseSttStreamingConnectOptions(language, encoding, sampleRate, wordTimestamps, vadEvents, sentenceTimestamps, redactPii, redactPci, format, punctuate, capitalize, eouTimeoutMs, endpointing, diarize, keywords, itnNormalize, finalizeOnWords, maxWords, additionalProperties);
     }
 
     public Builder additionalProperty(String key, Object value) {
