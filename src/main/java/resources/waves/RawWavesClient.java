@@ -37,7 +37,6 @@ import ai.smallest.resources.waves.types.GetVoicesWavesRequestModel;
 import ai.smallest.resources.waves.types.GetVoicesWavesResponse;
 import ai.smallest.resources.waves.types.LightningLargeRequest;
 import ai.smallest.resources.waves.types.LightningV31Request;
-import ai.smallest.resources.waves.types.Lightningv2Request;
 import ai.smallest.resources.waves.types.PronunciationDict;
 import ai.smallest.resources.waves.types.TranscribePulseWavesResponse;
 import ai.smallest.resources.waves.types.TtsRequest;
@@ -473,21 +472,49 @@ public class RawWavesClient {
               }
 
               /**
-               * Get speech for given text using the Waves API
+               * The Lightning-Large SSE API provides real-time text-to-speech streaming capabilities with high-quality voice synthesis. This API uses Server-Sent Events (SSE) to deliver audio chunks as they're generated, enabling low-latency audio playback without waiting for the entire audio file to process.
+               * <h2>When to Use</h2>
+               * <ul>
+               * <li><strong>Interactive Applications</strong>: Perfect for chatbots, virtual assistants, and other applications requiring immediate voice responses</li>
+               * <li><strong>Long-Form Content</strong>: Efficiently stream audio for articles, stories, or other long-form content without buffering delays</li>
+               * <li><strong>Voice User Interfaces</strong>: Create natural-sounding voice interfaces with minimal perceived latency</li>
+               * <li><strong>Accessibility Solutions</strong>: Provide real-time audio versions of written content for users with visual impairments</li>
+               * </ul>
+               * <h2>How It Works</h2>
+               * <ol>
+               * <li><strong>Make a POST Request</strong>: Send your text and voice settings to the API endpoint</li>
+               * <li><strong>Receive Audio Chunks</strong>: The API processes your text and streams audio back as base64-encoded chunks with 1024 byte size</li>
+               * <li><strong>Process the Stream</strong>: Handle the SSE events to decode and play audio chunks sequentially</li>
+               * <li><strong>End of Stream</strong>: The API sends a completion event when all audio has been delivered</li>
+               * </ol>
                */
-              public SmallestAIHttpResponse<InputStream> synthesizeLightningV2(
-                  Lightningv2Request request) {
-                return synthesizeLightningV2(request,null);
+              public SmallestAIHttpResponse<Iterable<Object>> synthesizeSseLightningLarge(
+                  LightningLargeRequest request) {
+                return synthesizeSseLightningLarge(request,null);
               }
 
               /**
-               * Get speech for given text using the Waves API
+               * The Lightning-Large SSE API provides real-time text-to-speech streaming capabilities with high-quality voice synthesis. This API uses Server-Sent Events (SSE) to deliver audio chunks as they're generated, enabling low-latency audio playback without waiting for the entire audio file to process.
+               * <h2>When to Use</h2>
+               * <ul>
+               * <li><strong>Interactive Applications</strong>: Perfect for chatbots, virtual assistants, and other applications requiring immediate voice responses</li>
+               * <li><strong>Long-Form Content</strong>: Efficiently stream audio for articles, stories, or other long-form content without buffering delays</li>
+               * <li><strong>Voice User Interfaces</strong>: Create natural-sounding voice interfaces with minimal perceived latency</li>
+               * <li><strong>Accessibility Solutions</strong>: Provide real-time audio versions of written content for users with visual impairments</li>
+               * </ul>
+               * <h2>How It Works</h2>
+               * <ol>
+               * <li><strong>Make a POST Request</strong>: Send your text and voice settings to the API endpoint</li>
+               * <li><strong>Receive Audio Chunks</strong>: The API processes your text and streams audio back as base64-encoded chunks with 1024 byte size</li>
+               * <li><strong>Process the Stream</strong>: Handle the SSE events to decode and play audio chunks sequentially</li>
+               * <li><strong>End of Stream</strong>: The API sends a completion event when all audio has been delivered</li>
+               * </ol>
                */
-              public SmallestAIHttpResponse<InputStream> synthesizeLightningV2(
-                  Lightningv2Request request, RequestOptions requestOptions) {
+              public SmallestAIHttpResponse<Iterable<Object>> synthesizeSseLightningLarge(
+                  LightningLargeRequest request, RequestOptions requestOptions) {
                 HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getWavesURL()).newBuilder()
 
-                  .addPathSegments("waves/v1/lightning-v2/get_speech");if (requestOptions != null) {
+                  .addPathSegments("waves/v1/lightning-large/stream");if (requestOptions != null) {
                     requestOptions.getQueryParameters().forEach((_key, _value) -> {
                       httpUrl.addQueryParameter(_key, _value);
                     } );
@@ -504,7 +531,6 @@ public class RawWavesClient {
                     .method("POST", body)
                     .headers(Headers.of(clientOptions.headers(requestOptions)))
                     .addHeader("Content-Type", "application/json")
-                    .addHeader("Accept", "application/json")
                     .build();
                   OkHttpClient client = clientOptions.httpClient();
                   if (requestOptions != null && requestOptions.getTimeout().isPresent()) {
@@ -513,11 +539,12 @@ public class RawWavesClient {
                   if (requestOptions != null && requestOptions.getMaxRetries().isPresent()) {
                     okhttpRequest = okhttpRequest.newBuilder().tag(RetryInterceptor.MaxRetriesOverride.class, new RetryInterceptor.MaxRetriesOverride(requestOptions.getMaxRetries().get())).build();
                   }
+                  client = client.newBuilder().callTimeout(0, TimeUnit.SECONDS).build();
                   try {
                     Response response = client.newCall(okhttpRequest).execute();
                     ResponseBody responseBody = response.body();
                     if (response.isSuccessful()) {
-                      return new SmallestAIHttpResponse<>(new ResponseBodyInputStream(response), response);
+                      return new SmallestAIHttpResponse<>(Stream.fromSse(Object.class, new ResponseBodyReader(response)), response);
                     }
                     String responseBodyString = responseBody != null ? responseBody.string() : "{}";
                     try {
@@ -542,66 +569,50 @@ public class RawWavesClient {
                 }
 
                 /**
-                 * The Lightning-Large SSE API provides real-time text-to-speech streaming capabilities with high-quality voice synthesis. This API uses Server-Sent Events (SSE) to deliver audio chunks as they're generated, enabling low-latency audio playback without waiting for the entire audio file to process.
-                 * <h2>When to Use</h2>
-                 * <ul>
-                 * <li><strong>Interactive Applications</strong>: Perfect for chatbots, virtual assistants, and other applications requiring immediate voice responses</li>
-                 * <li><strong>Long-Form Content</strong>: Efficiently stream audio for articles, stories, or other long-form content without buffering delays</li>
-                 * <li><strong>Voice User Interfaces</strong>: Create natural-sounding voice interfaces with minimal perceived latency</li>
-                 * <li><strong>Accessibility Solutions</strong>: Provide real-time audio versions of written content for users with visual impairments</li>
-                 * </ul>
-                 * <h2>How It Works</h2>
-                 * <ol>
-                 * <li><strong>Make a POST Request</strong>: Send your text and voice settings to the API endpoint</li>
-                 * <li><strong>Receive Audio Chunks</strong>: The API processes your text and streams audio back as base64-encoded chunks with 1024 byte size</li>
-                 * <li><strong>Process the Stream</strong>: Handle the SSE events to decode and play audio chunks sequentially</li>
-                 * <li><strong>End of Stream</strong>: The API sends a completion event when all audio has been delivered</li>
-                 * </ol>
+                 * List voices available for Lightning v3.1. The response is the union of the standard and Pro voice catalogs — the API does not return a per-voice &quot;is Pro&quot; flag, so consult the <a href="/waves/model-cards/text-to-speech/lightning-v-3-1-pro">Lightning v3.1 Pro</a> and <a href="/waves/model-cards/text-to-speech/lightning-v-3-1">Lightning v3.1</a> model cards for the canonical per-pool voice lists. Use the <code>voice_id</code> from this response together with <code>&quot;model&quot;: &quot;lightning_v3.1&quot;</code> (default) or <code>&quot;model&quot;: &quot;lightning_v3.1_pro&quot;</code> on the unified <code>/waves/v1/tts</code> route to pick the pool.
                  */
-                public SmallestAIHttpResponse<Iterable<Object>> synthesizeSseLightningLarge(
-                    LightningLargeRequest request) {
-                  return synthesizeSseLightningLarge(request,null);
+                public SmallestAIHttpResponse<GetVoicesWavesResponse> getVoices(
+                    GetVoicesWavesRequestModel model) {
+                  return getVoices(model,GetVoicesWavesRequest.builder().build());
                 }
 
                 /**
-                 * The Lightning-Large SSE API provides real-time text-to-speech streaming capabilities with high-quality voice synthesis. This API uses Server-Sent Events (SSE) to deliver audio chunks as they're generated, enabling low-latency audio playback without waiting for the entire audio file to process.
-                 * <h2>When to Use</h2>
-                 * <ul>
-                 * <li><strong>Interactive Applications</strong>: Perfect for chatbots, virtual assistants, and other applications requiring immediate voice responses</li>
-                 * <li><strong>Long-Form Content</strong>: Efficiently stream audio for articles, stories, or other long-form content without buffering delays</li>
-                 * <li><strong>Voice User Interfaces</strong>: Create natural-sounding voice interfaces with minimal perceived latency</li>
-                 * <li><strong>Accessibility Solutions</strong>: Provide real-time audio versions of written content for users with visual impairments</li>
-                 * </ul>
-                 * <h2>How It Works</h2>
-                 * <ol>
-                 * <li><strong>Make a POST Request</strong>: Send your text and voice settings to the API endpoint</li>
-                 * <li><strong>Receive Audio Chunks</strong>: The API processes your text and streams audio back as base64-encoded chunks with 1024 byte size</li>
-                 * <li><strong>Process the Stream</strong>: Handle the SSE events to decode and play audio chunks sequentially</li>
-                 * <li><strong>End of Stream</strong>: The API sends a completion event when all audio has been delivered</li>
-                 * </ol>
+                 * List voices available for Lightning v3.1. The response is the union of the standard and Pro voice catalogs — the API does not return a per-voice &quot;is Pro&quot; flag, so consult the <a href="/waves/model-cards/text-to-speech/lightning-v-3-1-pro">Lightning v3.1 Pro</a> and <a href="/waves/model-cards/text-to-speech/lightning-v-3-1">Lightning v3.1</a> model cards for the canonical per-pool voice lists. Use the <code>voice_id</code> from this response together with <code>&quot;model&quot;: &quot;lightning_v3.1&quot;</code> (default) or <code>&quot;model&quot;: &quot;lightning_v3.1_pro&quot;</code> on the unified <code>/waves/v1/tts</code> route to pick the pool.
                  */
-                public SmallestAIHttpResponse<Iterable<Object>> synthesizeSseLightningLarge(
-                    LightningLargeRequest request, RequestOptions requestOptions) {
+                public SmallestAIHttpResponse<GetVoicesWavesResponse> getVoices(
+                    GetVoicesWavesRequestModel model, RequestOptions requestOptions) {
+                  return getVoices(model,GetVoicesWavesRequest.builder().build(),requestOptions);
+                }
+
+                /**
+                 * List voices available for Lightning v3.1. The response is the union of the standard and Pro voice catalogs — the API does not return a per-voice &quot;is Pro&quot; flag, so consult the <a href="/waves/model-cards/text-to-speech/lightning-v-3-1-pro">Lightning v3.1 Pro</a> and <a href="/waves/model-cards/text-to-speech/lightning-v-3-1">Lightning v3.1</a> model cards for the canonical per-pool voice lists. Use the <code>voice_id</code> from this response together with <code>&quot;model&quot;: &quot;lightning_v3.1&quot;</code> (default) or <code>&quot;model&quot;: &quot;lightning_v3.1_pro&quot;</code> on the unified <code>/waves/v1/tts</code> route to pick the pool.
+                 */
+                public SmallestAIHttpResponse<GetVoicesWavesResponse> getVoices(
+                    GetVoicesWavesRequestModel model, GetVoicesWavesRequest request) {
+                  return getVoices(model,request,null);
+                }
+
+                /**
+                 * List voices available for Lightning v3.1. The response is the union of the standard and Pro voice catalogs — the API does not return a per-voice &quot;is Pro&quot; flag, so consult the <a href="/waves/model-cards/text-to-speech/lightning-v-3-1-pro">Lightning v3.1 Pro</a> and <a href="/waves/model-cards/text-to-speech/lightning-v-3-1">Lightning v3.1</a> model cards for the canonical per-pool voice lists. Use the <code>voice_id</code> from this response together with <code>&quot;model&quot;: &quot;lightning_v3.1&quot;</code> (default) or <code>&quot;model&quot;: &quot;lightning_v3.1_pro&quot;</code> on the unified <code>/waves/v1/tts</code> route to pick the pool.
+                 */
+                public SmallestAIHttpResponse<GetVoicesWavesResponse> getVoices(
+                    GetVoicesWavesRequestModel model, GetVoicesWavesRequest request,
+                    RequestOptions requestOptions) {
                   HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getWavesURL()).newBuilder()
 
-                    .addPathSegments("waves/v1/lightning-large/stream");if (requestOptions != null) {
+                    .addPathSegments("waves/v1")
+                    .addPathSegment(model.toString())
+                    .addPathSegments("get_voices");if (requestOptions != null) {
                       requestOptions.getQueryParameters().forEach((_key, _value) -> {
                         httpUrl.addQueryParameter(_key, _value);
                       } );
                     }
-                    RequestBody body;
-                    try {
-                      body = RequestBody.create(ObjectMappers.JSON_MAPPER.writeValueAsBytes(request), MediaTypes.APPLICATION_JSON);
-                    }
-                    catch(JsonProcessingException e) {
-                      throw new SmallestAIException("Failed to serialize request", e);
-                    }
-                    Request okhttpRequest = new Request.Builder()
+                    Request.Builder _requestBuilder = new Request.Builder()
                       .url(httpUrl.build())
-                      .method("POST", body)
+                      .method("GET", null)
                       .headers(Headers.of(clientOptions.headers(requestOptions)))
-                      .addHeader("Content-Type", "application/json")
-                      .build();
+                      .addHeader("Accept", "application/json");
+                    Request okhttpRequest = _requestBuilder.build();
                     OkHttpClient client = clientOptions.httpClient();
                     if (requestOptions != null && requestOptions.getTimeout().isPresent()) {
                       client = clientOptions.httpClientWithTimeout(requestOptions);
@@ -609,14 +620,12 @@ public class RawWavesClient {
                     if (requestOptions != null && requestOptions.getMaxRetries().isPresent()) {
                       okhttpRequest = okhttpRequest.newBuilder().tag(RetryInterceptor.MaxRetriesOverride.class, new RetryInterceptor.MaxRetriesOverride(requestOptions.getMaxRetries().get())).build();
                     }
-                    client = client.newBuilder().callTimeout(0, TimeUnit.SECONDS).build();
-                    try {
-                      Response response = client.newCall(okhttpRequest).execute();
+                    try (Response response = client.newCall(okhttpRequest).execute()) {
                       ResponseBody responseBody = response.body();
-                      if (response.isSuccessful()) {
-                        return new SmallestAIHttpResponse<>(Stream.fromSse(Object.class, new ResponseBodyReader(response)), response);
-                      }
                       String responseBodyString = responseBody != null ? responseBody.string() : "{}";
+                      if (response.isSuccessful()) {
+                        return new SmallestAIHttpResponse<>(ObjectMappers.JSON_MAPPER.readValue(responseBodyString, GetVoicesWavesResponse.class), response);
+                      }
                       try {
                         switch (response.code()) {
                           case 400:throw new BadRequestError(ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
@@ -639,68 +648,51 @@ public class RawWavesClient {
                   }
 
                   /**
-                   * The Lightning v2 SSE API provides real-time text-to-speech streaming capabilities with high-quality voice synthesis. This API uses Server-Sent Events (SSE) to deliver audio chunks as they're generated, enabling low-latency audio playback without waiting for the entire audio file to process.
-                   * For an end-to-end example of how to use the Lightning v2 SSE API, check out <a href="https://github.com/smallest-inc/waves-examples/blob/main/lightning_v2/http_streaming/http_streaming_api.py">Text to Speech (SSE) Example</a>
-                   * <h2>When to Use</h2>
-                   * <ul>
-                   * <li><strong>Interactive Applications</strong>: Perfect for chatbots, virtual assistants, and other applications requiring immediate voice responses</li>
-                   * <li><strong>Long-Form Content</strong>: Efficiently stream audio for articles, stories, or other long-form content without buffering delays</li>
-                   * <li><strong>Voice User Interfaces</strong>: Create natural-sounding voice interfaces with minimal perceived latency</li>
-                   * <li><strong>Accessibility Solutions</strong>: Provide real-time audio versions of written content for users with visual impairments</li>
-                   * </ul>
-                   * <h2>How It Works</h2>
-                   * <ol>
-                   * <li><strong>Make a POST Request</strong>: Send your text and voice settings to the API endpoint</li>
-                   * <li><strong>Receive Audio Chunks</strong>: The API processes your text and streams audio back as base64-encoded chunks with 1024 byte size</li>
-                   * <li><strong>Process the Stream</strong>: Handle the SSE events to decode and play audio chunks sequentially</li>
-                   * <li><strong>End of Stream</strong>: The API sends a completion event when all audio has been delivered</li>
-                   * </ol>
+                   * <strong>Deprecated</strong> — use <code>POST /waves/v1/voice-cloning</code> instead. The new
+                   * endpoint defaults to <code>lightning-v3.1</code>, supports optional metadata,
+                   * and returns pre-generated sample clips. This endpoint only clones
+                   * onto <code>lightning-large</code> and the resulting voices do not work on
+                   * <code>lightning-v3.1</code> (returns an empty WAV). Kept live for backward
+                   * compatibility; new integrations should migrate.
                    */
-                  public SmallestAIHttpResponse<Iterable<Object>> synthesizeSseLightningV2(
-                      Lightningv2Request request) {
-                    return synthesizeSseLightningV2(request,null);
+                  public SmallestAIHttpResponse<AddVoiceWavesResponse> addVoice(File file,
+                      AddVoiceWavesRequest request) {
+                    return addVoice(file,request,null);
                   }
 
                   /**
-                   * The Lightning v2 SSE API provides real-time text-to-speech streaming capabilities with high-quality voice synthesis. This API uses Server-Sent Events (SSE) to deliver audio chunks as they're generated, enabling low-latency audio playback without waiting for the entire audio file to process.
-                   * For an end-to-end example of how to use the Lightning v2 SSE API, check out <a href="https://github.com/smallest-inc/waves-examples/blob/main/lightning_v2/http_streaming/http_streaming_api.py">Text to Speech (SSE) Example</a>
-                   * <h2>When to Use</h2>
-                   * <ul>
-                   * <li><strong>Interactive Applications</strong>: Perfect for chatbots, virtual assistants, and other applications requiring immediate voice responses</li>
-                   * <li><strong>Long-Form Content</strong>: Efficiently stream audio for articles, stories, or other long-form content without buffering delays</li>
-                   * <li><strong>Voice User Interfaces</strong>: Create natural-sounding voice interfaces with minimal perceived latency</li>
-                   * <li><strong>Accessibility Solutions</strong>: Provide real-time audio versions of written content for users with visual impairments</li>
-                   * </ul>
-                   * <h2>How It Works</h2>
-                   * <ol>
-                   * <li><strong>Make a POST Request</strong>: Send your text and voice settings to the API endpoint</li>
-                   * <li><strong>Receive Audio Chunks</strong>: The API processes your text and streams audio back as base64-encoded chunks with 1024 byte size</li>
-                   * <li><strong>Process the Stream</strong>: Handle the SSE events to decode and play audio chunks sequentially</li>
-                   * <li><strong>End of Stream</strong>: The API sends a completion event when all audio has been delivered</li>
-                   * </ol>
+                   * <strong>Deprecated</strong> — use <code>POST /waves/v1/voice-cloning</code> instead. The new
+                   * endpoint defaults to <code>lightning-v3.1</code>, supports optional metadata,
+                   * and returns pre-generated sample clips. This endpoint only clones
+                   * onto <code>lightning-large</code> and the resulting voices do not work on
+                   * <code>lightning-v3.1</code> (returns an empty WAV). Kept live for backward
+                   * compatibility; new integrations should migrate.
                    */
-                  public SmallestAIHttpResponse<Iterable<Object>> synthesizeSseLightningV2(
-                      Lightningv2Request request, RequestOptions requestOptions) {
+                  public SmallestAIHttpResponse<AddVoiceWavesResponse> addVoice(File file,
+                      AddVoiceWavesRequest request, RequestOptions requestOptions) {
                     HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getWavesURL()).newBuilder()
 
-                      .addPathSegments("waves/v1/lightning-v2/stream");if (requestOptions != null) {
+                      .addPathSegments("waves/v1/lightning-large/add_voice");if (requestOptions != null) {
                         requestOptions.getQueryParameters().forEach((_key, _value) -> {
                           httpUrl.addQueryParameter(_key, _value);
                         } );
                       }
-                      RequestBody body;
+                      MultipartBody.Builder multipartBodyBuilder = new MultipartBody.Builder().setType(MultipartBody.FORM);
                       try {
-                        body = RequestBody.create(ObjectMappers.JSON_MAPPER.writeValueAsBytes(request), MediaTypes.APPLICATION_JSON);
+                        multipartBodyBuilder.addFormDataPart("displayName", request.getDisplayName());
+                        String fileMimeType = Files.probeContentType(file.toPath());
+                        MediaType fileMimeTypeMediaType = fileMimeType != null ? MediaType.parse(fileMimeType) : null;
+                        multipartBodyBuilder.addFormDataPart("file", file.getName(), RequestBody.create(file, fileMimeTypeMediaType));
                       }
-                      catch(JsonProcessingException e) {
-                        throw new SmallestAIException("Failed to serialize request", e);
+                      catch(Exception e) {
+                        throw new RuntimeException(e);
                       }
-                      Request okhttpRequest = new Request.Builder()
+                      Request.Builder _requestBuilder = new Request.Builder()
                         .url(httpUrl.build())
-                        .method("POST", body)
+                        .method("POST", multipartBodyBuilder.build())
                         .headers(Headers.of(clientOptions.headers(requestOptions)))
-                        .addHeader("Content-Type", "application/json")
-                        .build();
+                        .addHeader("Accept", "application/json");
+                      Request okhttpRequest = _requestBuilder.build();
                       OkHttpClient client = clientOptions.httpClient();
                       if (requestOptions != null && requestOptions.getTimeout().isPresent()) {
                         client = clientOptions.httpClientWithTimeout(requestOptions);
@@ -708,14 +700,12 @@ public class RawWavesClient {
                       if (requestOptions != null && requestOptions.getMaxRetries().isPresent()) {
                         okhttpRequest = okhttpRequest.newBuilder().tag(RetryInterceptor.MaxRetriesOverride.class, new RetryInterceptor.MaxRetriesOverride(requestOptions.getMaxRetries().get())).build();
                       }
-                      client = client.newBuilder().callTimeout(0, TimeUnit.SECONDS).build();
-                      try {
-                        Response response = client.newCall(okhttpRequest).execute();
+                      try (Response response = client.newCall(okhttpRequest).execute()) {
                         ResponseBody responseBody = response.body();
-                        if (response.isSuccessful()) {
-                          return new SmallestAIHttpResponse<>(Stream.fromSse(Object.class, new ResponseBodyReader(response)), response);
-                        }
                         String responseBodyString = responseBody != null ? responseBody.string() : "{}";
+                        if (response.isSuccessful()) {
+                          return new SmallestAIHttpResponse<>(ObjectMappers.JSON_MAPPER.readValue(responseBodyString, AddVoiceWavesResponse.class), response);
+                        }
                         try {
                           switch (response.code()) {
                             case 400:throw new BadRequestError(ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
@@ -737,63 +727,25 @@ public class RawWavesClient {
                       }
                     }
 
-                    /**
-                     * List voices available for Lightning v3.1. The response is the union of the standard and Pro voice catalogs — the API does not return a per-voice &quot;is Pro&quot; flag, so consult the <a href="/waves/model-cards/text-to-speech/lightning-v-3-1-pro">Lightning v3.1 Pro</a> and <a href="/waves/model-cards/text-to-speech/lightning-v-3-1">Lightning v3.1</a> model cards for the canonical per-pool voice lists. Use the <code>voice_id</code> from this response together with <code>&quot;model&quot;: &quot;lightning_v3.1&quot;</code> (default) or <code>&quot;model&quot;: &quot;lightning_v3.1_pro&quot;</code> on the unified <code>/waves/v1/tts</code> route to pick the pool.
-                     */
-                    public SmallestAIHttpResponse<GetVoicesWavesResponse> getVoices(
-                        GetVoicesWavesRequestModel model) {
-                      return getVoices(model,GetVoicesWavesRequest.builder().build());
-                    }
-
-                    /**
-                     * List voices available for Lightning v3.1. The response is the union of the standard and Pro voice catalogs — the API does not return a per-voice &quot;is Pro&quot; flag, so consult the <a href="/waves/model-cards/text-to-speech/lightning-v-3-1-pro">Lightning v3.1 Pro</a> and <a href="/waves/model-cards/text-to-speech/lightning-v-3-1">Lightning v3.1</a> model cards for the canonical per-pool voice lists. Use the <code>voice_id</code> from this response together with <code>&quot;model&quot;: &quot;lightning_v3.1&quot;</code> (default) or <code>&quot;model&quot;: &quot;lightning_v3.1_pro&quot;</code> on the unified <code>/waves/v1/tts</code> route to pick the pool.
-                     */
-                    public SmallestAIHttpResponse<GetVoicesWavesResponse> getVoices(
-                        GetVoicesWavesRequestModel model, RequestOptions requestOptions) {
-                      return getVoices(model,GetVoicesWavesRequest.builder().build(),requestOptions);
-                    }
-
-                    /**
-                     * List voices available for Lightning v3.1. The response is the union of the standard and Pro voice catalogs — the API does not return a per-voice &quot;is Pro&quot; flag, so consult the <a href="/waves/model-cards/text-to-speech/lightning-v-3-1-pro">Lightning v3.1 Pro</a> and <a href="/waves/model-cards/text-to-speech/lightning-v-3-1">Lightning v3.1</a> model cards for the canonical per-pool voice lists. Use the <code>voice_id</code> from this response together with <code>&quot;model&quot;: &quot;lightning_v3.1&quot;</code> (default) or <code>&quot;model&quot;: &quot;lightning_v3.1_pro&quot;</code> on the unified <code>/waves/v1/tts</code> route to pick the pool.
-                     */
-                    public SmallestAIHttpResponse<GetVoicesWavesResponse> getVoices(
-                        GetVoicesWavesRequestModel model, GetVoicesWavesRequest request) {
-                      return getVoices(model,request,null);
-                    }
-
-                    /**
-                     * List voices available for Lightning v3.1. The response is the union of the standard and Pro voice catalogs — the API does not return a per-voice &quot;is Pro&quot; flag, so consult the <a href="/waves/model-cards/text-to-speech/lightning-v-3-1-pro">Lightning v3.1 Pro</a> and <a href="/waves/model-cards/text-to-speech/lightning-v-3-1">Lightning v3.1</a> model cards for the canonical per-pool voice lists. Use the <code>voice_id</code> from this response together with <code>&quot;model&quot;: &quot;lightning_v3.1&quot;</code> (default) or <code>&quot;model&quot;: &quot;lightning_v3.1_pro&quot;</code> on the unified <code>/waves/v1/tts</code> route to pick the pool.
-                     */
-                    public SmallestAIHttpResponse<GetVoicesWavesResponse> getVoices(
-                        GetVoicesWavesRequestModel model, GetVoicesWavesRequest request,
-                        RequestOptions requestOptions) {
+                    public SmallestAIHttpResponse<AddVoiceWavesResponse> addVoice(
+                        InputStream stream, String filename) {
                       HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getWavesURL()).newBuilder()
 
-                        .addPathSegments("waves/v1")
-                        .addPathSegment(model.toString())
-                        .addPathSegments("get_voices");if (requestOptions != null) {
-                          requestOptions.getQueryParameters().forEach((_key, _value) -> {
-                            httpUrl.addQueryParameter(_key, _value);
-                          } );
-                        }
-                        Request.Builder _requestBuilder = new Request.Builder()
-                          .url(httpUrl.build())
-                          .method("GET", null)
-                          .headers(Headers.of(clientOptions.headers(requestOptions)))
-                          .addHeader("Accept", "application/json");
+                        .addPathSegments("waves/v1/lightning-large/add_voice");FileStream fs = new FileStream(stream, filename, null);
+                        MultipartBody.Builder multipartBodyBuilder = new MultipartBody.Builder().setType(MultipartBody.FORM);
+                        multipartBodyBuilder.addFormDataPart("file", filename, fs.toRequestBody());
+                        RequestBody body = multipartBodyBuilder.build();
+                        Request.Builder _requestBuilder = new Request.Builder();
+                        _requestBuilder.url(httpUrl.build());
+                        _requestBuilder.method("POST", body);
+                        _requestBuilder.headers(Headers.of(this.clientOptions.headers((RequestOptions) null)));
                         Request okhttpRequest = _requestBuilder.build();
                         OkHttpClient client = clientOptions.httpClient();
-                        if (requestOptions != null && requestOptions.getTimeout().isPresent()) {
-                          client = clientOptions.httpClientWithTimeout(requestOptions);
-                        }
-                        if (requestOptions != null && requestOptions.getMaxRetries().isPresent()) {
-                          okhttpRequest = okhttpRequest.newBuilder().tag(RetryInterceptor.MaxRetriesOverride.class, new RetryInterceptor.MaxRetriesOverride(requestOptions.getMaxRetries().get())).build();
-                        }
                         try (Response response = client.newCall(okhttpRequest).execute()) {
                           ResponseBody responseBody = response.body();
                           String responseBodyString = responseBody != null ? responseBody.string() : "{}";
                           if (response.isSuccessful()) {
-                            return new SmallestAIHttpResponse<>(ObjectMappers.JSON_MAPPER.readValue(responseBodyString, GetVoicesWavesResponse.class), response);
+                            return new SmallestAIHttpResponse<>(ObjectMappers.JSON_MAPPER.readValue(responseBodyString, AddVoiceWavesResponse.class), response);
                           }
                           try {
                             switch (response.code()) {
@@ -816,59 +768,20 @@ public class RawWavesClient {
                         }
                       }
 
-                      /**
-                       * <strong>Deprecated</strong> — use <code>POST /waves/v1/voice-cloning</code> instead. The new
-                       * endpoint defaults to <code>lightning-v3.1</code>, supports optional metadata,
-                       * and returns pre-generated sample clips. This endpoint only clones
-                       * onto <code>lightning-large</code> and the resulting voices do not work on
-                       * <code>lightning-v3.1</code> (returns an empty WAV). Kept live for backward
-                       * compatibility; new integrations should migrate.
-                       */
-                      public SmallestAIHttpResponse<AddVoiceWavesResponse> addVoice(File file,
-                          AddVoiceWavesRequest request) {
-                        return addVoice(file,request,null);
-                      }
-
-                      /**
-                       * <strong>Deprecated</strong> — use <code>POST /waves/v1/voice-cloning</code> instead. The new
-                       * endpoint defaults to <code>lightning-v3.1</code>, supports optional metadata,
-                       * and returns pre-generated sample clips. This endpoint only clones
-                       * onto <code>lightning-large</code> and the resulting voices do not work on
-                       * <code>lightning-v3.1</code> (returns an empty WAV). Kept live for backward
-                       * compatibility; new integrations should migrate.
-                       */
-                      public SmallestAIHttpResponse<AddVoiceWavesResponse> addVoice(File file,
-                          AddVoiceWavesRequest request, RequestOptions requestOptions) {
+                      public SmallestAIHttpResponse<AddVoiceWavesResponse> addVoice(
+                          InputStream stream, String filename, MediaType mediaType) {
                         HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getWavesURL()).newBuilder()
 
-                          .addPathSegments("waves/v1/lightning-large/add_voice");if (requestOptions != null) {
-                            requestOptions.getQueryParameters().forEach((_key, _value) -> {
-                              httpUrl.addQueryParameter(_key, _value);
-                            } );
-                          }
+                          .addPathSegments("waves/v1/lightning-large/add_voice");FileStream fs = new FileStream(stream, filename, mediaType);
                           MultipartBody.Builder multipartBodyBuilder = new MultipartBody.Builder().setType(MultipartBody.FORM);
-                          try {
-                            multipartBodyBuilder.addFormDataPart("displayName", request.getDisplayName());
-                            String fileMimeType = Files.probeContentType(file.toPath());
-                            MediaType fileMimeTypeMediaType = fileMimeType != null ? MediaType.parse(fileMimeType) : null;
-                            multipartBodyBuilder.addFormDataPart("file", file.getName(), RequestBody.create(file, fileMimeTypeMediaType));
-                          }
-                          catch(Exception e) {
-                            throw new RuntimeException(e);
-                          }
-                          Request.Builder _requestBuilder = new Request.Builder()
-                            .url(httpUrl.build())
-                            .method("POST", multipartBodyBuilder.build())
-                            .headers(Headers.of(clientOptions.headers(requestOptions)))
-                            .addHeader("Accept", "application/json");
+                          multipartBodyBuilder.addFormDataPart("file", filename, fs.toRequestBody());
+                          RequestBody body = multipartBodyBuilder.build();
+                          Request.Builder _requestBuilder = new Request.Builder();
+                          _requestBuilder.url(httpUrl.build());
+                          _requestBuilder.method("POST", body);
+                          _requestBuilder.headers(Headers.of(this.clientOptions.headers((RequestOptions) null)));
                           Request okhttpRequest = _requestBuilder.build();
                           OkHttpClient client = clientOptions.httpClient();
-                          if (requestOptions != null && requestOptions.getTimeout().isPresent()) {
-                            client = clientOptions.httpClientWithTimeout(requestOptions);
-                          }
-                          if (requestOptions != null && requestOptions.getMaxRetries().isPresent()) {
-                            okhttpRequest = okhttpRequest.newBuilder().tag(RetryInterceptor.MaxRetriesOverride.class, new RetryInterceptor.MaxRetriesOverride(requestOptions.getMaxRetries().get())).build();
-                          }
                           try (Response response = client.newCall(okhttpRequest).execute()) {
                             ResponseBody responseBody = response.body();
                             String responseBodyString = responseBody != null ? responseBody.string() : "{}";
@@ -897,19 +810,30 @@ public class RawWavesClient {
                         }
 
                         public SmallestAIHttpResponse<AddVoiceWavesResponse> addVoice(
-                            InputStream stream, String filename) {
+                            InputStream stream, String filename, RequestOptions requestOptions) {
                           HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getWavesURL()).newBuilder()
 
-                            .addPathSegments("waves/v1/lightning-large/add_voice");FileStream fs = new FileStream(stream, filename, null);
+                            .addPathSegments("waves/v1/lightning-large/add_voice");if (requestOptions != null) {
+                              requestOptions.getQueryParameters().forEach((_key, _value) -> {
+                                httpUrl.addQueryParameter(_key, _value);
+                              } );
+                            }
+                            FileStream fs = new FileStream(stream, filename, null);
                             MultipartBody.Builder multipartBodyBuilder = new MultipartBody.Builder().setType(MultipartBody.FORM);
                             multipartBodyBuilder.addFormDataPart("file", filename, fs.toRequestBody());
                             RequestBody body = multipartBodyBuilder.build();
                             Request.Builder _requestBuilder = new Request.Builder();
                             _requestBuilder.url(httpUrl.build());
                             _requestBuilder.method("POST", body);
-                            _requestBuilder.headers(Headers.of(this.clientOptions.headers((RequestOptions) null)));
+                            _requestBuilder.headers(Headers.of(this.clientOptions.headers(requestOptions)));
                             Request okhttpRequest = _requestBuilder.build();
                             OkHttpClient client = clientOptions.httpClient();
+                            if (requestOptions != null && requestOptions.getTimeout().isPresent()) {
+                              client = clientOptions.httpClientWithTimeout(requestOptions);
+                            }
+                            if (requestOptions != null && requestOptions.getMaxRetries().isPresent()) {
+                              okhttpRequest = okhttpRequest.newBuilder().tag(RetryInterceptor.MaxRetriesOverride.class, new RetryInterceptor.MaxRetriesOverride(requestOptions.getMaxRetries().get())).build();
+                            }
                             try (Response response = client.newCall(okhttpRequest).execute()) {
                               ResponseBody responseBody = response.body();
                               String responseBodyString = responseBody != null ? responseBody.string() : "{}";
@@ -938,19 +862,31 @@ public class RawWavesClient {
                           }
 
                           public SmallestAIHttpResponse<AddVoiceWavesResponse> addVoice(
-                              InputStream stream, String filename, MediaType mediaType) {
+                              InputStream stream, String filename, MediaType mediaType,
+                              RequestOptions requestOptions) {
                             HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getWavesURL()).newBuilder()
 
-                              .addPathSegments("waves/v1/lightning-large/add_voice");FileStream fs = new FileStream(stream, filename, mediaType);
+                              .addPathSegments("waves/v1/lightning-large/add_voice");if (requestOptions != null) {
+                                requestOptions.getQueryParameters().forEach((_key, _value) -> {
+                                  httpUrl.addQueryParameter(_key, _value);
+                                } );
+                              }
+                              FileStream fs = new FileStream(stream, filename, mediaType);
                               MultipartBody.Builder multipartBodyBuilder = new MultipartBody.Builder().setType(MultipartBody.FORM);
                               multipartBodyBuilder.addFormDataPart("file", filename, fs.toRequestBody());
                               RequestBody body = multipartBodyBuilder.build();
                               Request.Builder _requestBuilder = new Request.Builder();
                               _requestBuilder.url(httpUrl.build());
                               _requestBuilder.method("POST", body);
-                              _requestBuilder.headers(Headers.of(this.clientOptions.headers((RequestOptions) null)));
+                              _requestBuilder.headers(Headers.of(this.clientOptions.headers(requestOptions)));
                               Request okhttpRequest = _requestBuilder.build();
                               OkHttpClient client = clientOptions.httpClient();
+                              if (requestOptions != null && requestOptions.getTimeout().isPresent()) {
+                                client = clientOptions.httpClientWithTimeout(requestOptions);
+                              }
+                              if (requestOptions != null && requestOptions.getMaxRetries().isPresent()) {
+                                okhttpRequest = okhttpRequest.newBuilder().tag(RetryInterceptor.MaxRetriesOverride.class, new RetryInterceptor.MaxRetriesOverride(requestOptions.getMaxRetries().get())).build();
+                              }
                               try (Response response = client.newCall(okhttpRequest).execute()) {
                                 ResponseBody responseBody = response.body();
                                 String responseBodyString = responseBody != null ? responseBody.string() : "{}";
@@ -978,25 +914,36 @@ public class RawWavesClient {
                               }
                             }
 
-                            public SmallestAIHttpResponse<AddVoiceWavesResponse> addVoice(
-                                InputStream stream, String filename,
+                            /**
+                             * <strong>Deprecated</strong> — use <code>GET /waves/v1/voice-cloning</code> instead. The new
+                             * list endpoint returns the same data plus a <code>modelIds</code> array per
+                             * clone. Kept live for backward compatibility.
+                             */
+                            public SmallestAIHttpResponse<GetClonedVoicesWavesResponse> getClonedVoices(
+                                ) {
+                              return getClonedVoices(null);
+                            }
+
+                            /**
+                             * <strong>Deprecated</strong> — use <code>GET /waves/v1/voice-cloning</code> instead. The new
+                             * list endpoint returns the same data plus a <code>modelIds</code> array per
+                             * clone. Kept live for backward compatibility.
+                             */
+                            public SmallestAIHttpResponse<GetClonedVoicesWavesResponse> getClonedVoices(
                                 RequestOptions requestOptions) {
                               HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getWavesURL()).newBuilder()
 
-                                .addPathSegments("waves/v1/lightning-large/add_voice");if (requestOptions != null) {
+                                .addPathSegments("waves/v1/lightning-large/get_cloned_voices");if (requestOptions != null) {
                                   requestOptions.getQueryParameters().forEach((_key, _value) -> {
                                     httpUrl.addQueryParameter(_key, _value);
                                   } );
                                 }
-                                FileStream fs = new FileStream(stream, filename, null);
-                                MultipartBody.Builder multipartBodyBuilder = new MultipartBody.Builder().setType(MultipartBody.FORM);
-                                multipartBodyBuilder.addFormDataPart("file", filename, fs.toRequestBody());
-                                RequestBody body = multipartBodyBuilder.build();
-                                Request.Builder _requestBuilder = new Request.Builder();
-                                _requestBuilder.url(httpUrl.build());
-                                _requestBuilder.method("POST", body);
-                                _requestBuilder.headers(Headers.of(this.clientOptions.headers(requestOptions)));
-                                Request okhttpRequest = _requestBuilder.build();
+                                Request okhttpRequest = new Request.Builder()
+                                  .url(httpUrl.build())
+                                  .method("GET", null)
+                                  .headers(Headers.of(clientOptions.headers(requestOptions)))
+                                  .addHeader("Accept", "application/json")
+                                  .build();
                                 OkHttpClient client = clientOptions.httpClient();
                                 if (requestOptions != null && requestOptions.getTimeout().isPresent()) {
                                   client = clientOptions.httpClientWithTimeout(requestOptions);
@@ -1008,7 +955,7 @@ public class RawWavesClient {
                                   ResponseBody responseBody = response.body();
                                   String responseBodyString = responseBody != null ? responseBody.string() : "{}";
                                   if (response.isSuccessful()) {
-                                    return new SmallestAIHttpResponse<>(ObjectMappers.JSON_MAPPER.readValue(responseBodyString, AddVoiceWavesResponse.class), response);
+                                    return new SmallestAIHttpResponse<>(ObjectMappers.JSON_MAPPER.readValue(responseBodyString, GetClonedVoicesWavesResponse.class), response);
                                   }
                                   try {
                                     switch (response.code()) {
@@ -1031,25 +978,44 @@ public class RawWavesClient {
                                 }
                               }
 
-                              public SmallestAIHttpResponse<AddVoiceWavesResponse> addVoice(
-                                  InputStream stream, String filename, MediaType mediaType,
-                                  RequestOptions requestOptions) {
+                              /**
+                               * Delete a voice clone by <code>voiceId</code>. Despite the <code>/lightning-large/</code>
+                               * path, this endpoint deletes any voice clone on the organization,
+                               * including clones created via <code>POST /waves/v1/voice-cloning</code>.
+                               */
+                              public SmallestAIHttpResponse<DeleteVoiceWavesResponse> deleteVoice(
+                                  DeleteVoiceWavesRequest request) {
+                                return deleteVoice(request,null);
+                              }
+
+                              /**
+                               * Delete a voice clone by <code>voiceId</code>. Despite the <code>/lightning-large/</code>
+                               * path, this endpoint deletes any voice clone on the organization,
+                               * including clones created via <code>POST /waves/v1/voice-cloning</code>.
+                               */
+                              public SmallestAIHttpResponse<DeleteVoiceWavesResponse> deleteVoice(
+                                  DeleteVoiceWavesRequest request, RequestOptions requestOptions) {
                                 HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getWavesURL()).newBuilder()
 
-                                  .addPathSegments("waves/v1/lightning-large/add_voice");if (requestOptions != null) {
+                                  .addPathSegments("waves/v1/lightning-large");if (requestOptions != null) {
                                     requestOptions.getQueryParameters().forEach((_key, _value) -> {
                                       httpUrl.addQueryParameter(_key, _value);
                                     } );
                                   }
-                                  FileStream fs = new FileStream(stream, filename, mediaType);
-                                  MultipartBody.Builder multipartBodyBuilder = new MultipartBody.Builder().setType(MultipartBody.FORM);
-                                  multipartBodyBuilder.addFormDataPart("file", filename, fs.toRequestBody());
-                                  RequestBody body = multipartBodyBuilder.build();
-                                  Request.Builder _requestBuilder = new Request.Builder();
-                                  _requestBuilder.url(httpUrl.build());
-                                  _requestBuilder.method("POST", body);
-                                  _requestBuilder.headers(Headers.of(this.clientOptions.headers(requestOptions)));
-                                  Request okhttpRequest = _requestBuilder.build();
+                                  RequestBody body;
+                                  try {
+                                    body = RequestBody.create(ObjectMappers.JSON_MAPPER.writeValueAsBytes(request), MediaTypes.APPLICATION_JSON);
+                                  }
+                                  catch(JsonProcessingException e) {
+                                    throw new SmallestAIException("Failed to serialize request", e);
+                                  }
+                                  Request okhttpRequest = new Request.Builder()
+                                    .url(httpUrl.build())
+                                    .method("DELETE", body)
+                                    .headers(Headers.of(clientOptions.headers(requestOptions)))
+                                    .addHeader("Content-Type", "application/json")
+                                    .addHeader("Accept", "application/json")
+                                    .build();
                                   OkHttpClient client = clientOptions.httpClient();
                                   if (requestOptions != null && requestOptions.getTimeout().isPresent()) {
                                     client = clientOptions.httpClientWithTimeout(requestOptions);
@@ -1061,7 +1027,7 @@ public class RawWavesClient {
                                     ResponseBody responseBody = response.body();
                                     String responseBodyString = responseBody != null ? responseBody.string() : "{}";
                                     if (response.isSuccessful()) {
-                                      return new SmallestAIHttpResponse<>(ObjectMappers.JSON_MAPPER.readValue(responseBodyString, AddVoiceWavesResponse.class), response);
+                                      return new SmallestAIHttpResponse<>(ObjectMappers.JSON_MAPPER.readValue(responseBodyString, DeleteVoiceWavesResponse.class), response);
                                     }
                                     try {
                                       switch (response.code()) {
@@ -1085,33 +1051,197 @@ public class RawWavesClient {
                                 }
 
                                 /**
-                                 * <strong>Deprecated</strong> — use <code>GET /waves/v1/voice-cloning</code> instead. The new
-                                 * list endpoint returns the same data plus a <code>modelIds</code> array per
-                                 * clone. Kept live for backward compatibility.
+                                 * Synthesize speech from text in a single request. Pass <code>text</code> + <code>voice_id</code>, get back binary audio.
+                                 * <p>Pick the model with the <code>model</code> body parameter: default <code>lightning_v3.1</code>, or <code>lightning_v3.1_pro</code> for the Pro pool. Other request parameters are identical across models.</p>
+                                 * <p><strong>Language behaviour on <code>lightning_v3.1_pro</code>:</strong> pass <code>language: en</code> for UK + American accented English, pass <code>language: hi</code> for Indian accented English + Hindi (code-switching), or omit <code>language</code> to default to <code>en + hi</code> (mixed Indian + Western English coverage). On <code>lightning_v3.1</code> the full 12-language catalog applies (see voice catalog).</p>
+                                 * <h2>When to use this</h2>
+                                 * <ul>
+                                 * <li><strong>Use this</strong> for short utterances you can render before playback (notifications, prompts, batch jobs, audio file generation).</li>
+                                 * <li><strong>Use <code>/waves/v1/tts/live</code></strong> when you want playback to start before the full audio is ready (long passages, latency-sensitive apps).</li>
+                                 * <li><strong>Use <code>/waves/v1/tts/live</code></strong> (WebSocket) when text arrives incrementally (LLM token streams, live captioning).</li>
+                                 * </ul>
+                                 * <h2>Key features</h2>
+                                 * <ul>
+                                 * <li>44 kHz natural, expressive synthesis</li>
+                                 * <li>Model selectable per request via <code>model</code> body parameter</li>
+                                 * <li>Cloned voice IDs (<code>voice_*</code>) work on <code>lightning_v3.1</code> — same param as catalog voices</li>
+                                 * <li>12 documented languages on <code>lightning_v3.1</code>. On <code>lightning_v3.1_pro</code>: <code>language: en</code> → UK + American accented English; <code>language: hi</code> → Indian accented English + Hindi; omit <code>language</code> → defaults to <code>en + hi</code>.</li>
+                                 * <li>Output formats: <code>pcm</code>, <code>mp3</code>, <code>wav</code>, <code>ulaw</code>, <code>alaw</code></li>
+                                 * <li>Sample rates: 8 kHz – 44.1 kHz</li>
+                                 * <li>Speed: 0.5× – 2×</li>
+                                 * <li>Per-call pronunciation dictionaries via <code>pronunciation_dicts</code></li>
+                                 * </ul>
+                                 * <h2>Examples</h2>
+                                 * <p><strong>cURL — Lightning v3.1 (default)</strong></p>
+                                 * <pre><code class="language-bash">curl -X POST &quot;https://api.smallest.ai/waves/v1/tts&quot; \
+                                 *   -H &quot;Authorization: Bearer $SMALLEST_API_KEY&quot; \
+                                 *   -H &quot;Content-Type: application/json&quot; \
+                                 *   -H &quot;Accept: audio/wav&quot; \
+                                 *   -d '{
+                                 *     &quot;text&quot;: &quot;Hello from Waves TTS.&quot;,
+                                 *     &quot;voice_id&quot;: &quot;magnus&quot;,
+                                 *     &quot;sample_rate&quot;: 24000,
+                                 *     &quot;output_format&quot;: &quot;wav&quot;
+                                 *   }' --output speech.wav
+                                 * </code></pre>
+                                 * <p><strong>cURL — Lightning v3.1 Pro (omit <code>language</code> → defaults to <code>en + hi</code>)</strong></p>
+                                 * <pre><code class="language-bash">curl -X POST &quot;https://api.smallest.ai/waves/v1/tts&quot; \
+                                 *   -H &quot;Authorization: Bearer $SMALLEST_API_KEY&quot; \
+                                 *   -H &quot;Content-Type: application/json&quot; \
+                                 *   -H &quot;Accept: audio/wav&quot; \
+                                 *   -d '{
+                                 *     &quot;text&quot;: &quot;Hello from the Lightning v3.1 Pro pool.&quot;,
+                                 *     &quot;voice_id&quot;: &quot;meher&quot;,
+                                 *     &quot;model&quot;: &quot;lightning_v3.1_pro&quot;,
+                                 *     &quot;sample_rate&quot;: 24000,
+                                 *     &quot;output_format&quot;: &quot;wav&quot;
+                                 *   }' --output speech.wav
+                                 * </code></pre>
+                                 * <p><strong>cURL — Lightning v3.1 Pro with explicit <code>language: en</code> (UK + American accented English)</strong></p>
+                                 * <pre><code class="language-bash">curl -X POST &quot;https://api.smallest.ai/waves/v1/tts&quot; \
+                                 *   -H &quot;Authorization: Bearer $SMALLEST_API_KEY&quot; \
+                                 *   -H &quot;Content-Type: application/json&quot; \
+                                 *   -H &quot;Accept: audio/wav&quot; \
+                                 *   -d '{
+                                 *     &quot;text&quot;: &quot;Good morning, this is a Pro voice speaking.&quot;,
+                                 *     &quot;voice_id&quot;: &quot;meher&quot;,
+                                 *     &quot;model&quot;: &quot;lightning_v3.1_pro&quot;,
+                                 *     &quot;language&quot;: &quot;en&quot;,
+                                 *     &quot;sample_rate&quot;: 24000,
+                                 *     &quot;output_format&quot;: &quot;wav&quot;
+                                 *   }' --output speech.wav
+                                 * </code></pre>
+                                 * <p><strong>cURL — Lightning v3.1 Pro with explicit <code>language: hi</code> (Indian accented English + Hindi)</strong></p>
+                                 * <pre><code class="language-bash">curl -X POST &quot;https://api.smallest.ai/waves/v1/tts&quot; \
+                                 *   -H &quot;Authorization: Bearer $SMALLEST_API_KEY&quot; \
+                                 *   -H &quot;Content-Type: application/json&quot; \
+                                 *   -H &quot;Accept: audio/wav&quot; \
+                                 *   -d '{
+                                 *     &quot;text&quot;: &quot;Namaste, this is an Indian-accented Pro voice.&quot;,
+                                 *     &quot;voice_id&quot;: &quot;meher&quot;,
+                                 *     &quot;model&quot;: &quot;lightning_v3.1_pro&quot;,
+                                 *     &quot;language&quot;: &quot;hi&quot;,
+                                 *     &quot;sample_rate&quot;: 24000,
+                                 *     &quot;output_format&quot;: &quot;wav&quot;
+                                 *   }' --output speech.wav
+                                 * </code></pre>
+                                 * <h2>Common gotchas</h2>
+                                 * <ul>
+                                 * <li><strong>Set <code>Accept: audio/wav</code>.</strong> Omitting it can return an empty or unplayable response.</li>
+                                 * <li><strong>Pair voice IDs with the right model.</strong> Voice catalogs differ between <code>lightning_v3.1</code> and <code>lightning_v3.1_pro</code>. The API does not reject mismatched pairings, but using a Pro-only <code>voice_id</code> with <code>model=lightning_v3.1</code> (or omitting <code>model</code>) can return wrong or hallucinated audio. Pair Pro voices with <code>model=lightning_v3.1_pro</code>; standard catalog voices with <code>model=lightning_v3.1</code> (the default).</li>
+                                 * <li><strong>Cloned voices</strong> (<code>voice_*</code> from <code>add_voice</code>) work with <code>lightning_v3.1</code> only; voice cloning is not available on <code>lightning_v3.1_pro</code>.</li>
+                                 * <li><strong>44.1 kHz output</strong> is supported but most playback environments are happy with 24 kHz — drop the sample rate if bandwidth matters.</li>
+                                 * </ul>
                                  */
-                                public SmallestAIHttpResponse<GetClonedVoicesWavesResponse> getClonedVoices(
-                                    ) {
-                                  return getClonedVoices(null);
+                                public SmallestAIHttpResponse<InputStream> synthesizeTts(
+                                    TtsRequest request) {
+                                  return synthesizeTts(request,null);
                                 }
 
                                 /**
-                                 * <strong>Deprecated</strong> — use <code>GET /waves/v1/voice-cloning</code> instead. The new
-                                 * list endpoint returns the same data plus a <code>modelIds</code> array per
-                                 * clone. Kept live for backward compatibility.
+                                 * Synthesize speech from text in a single request. Pass <code>text</code> + <code>voice_id</code>, get back binary audio.
+                                 * <p>Pick the model with the <code>model</code> body parameter: default <code>lightning_v3.1</code>, or <code>lightning_v3.1_pro</code> for the Pro pool. Other request parameters are identical across models.</p>
+                                 * <p><strong>Language behaviour on <code>lightning_v3.1_pro</code>:</strong> pass <code>language: en</code> for UK + American accented English, pass <code>language: hi</code> for Indian accented English + Hindi (code-switching), or omit <code>language</code> to default to <code>en + hi</code> (mixed Indian + Western English coverage). On <code>lightning_v3.1</code> the full 12-language catalog applies (see voice catalog).</p>
+                                 * <h2>When to use this</h2>
+                                 * <ul>
+                                 * <li><strong>Use this</strong> for short utterances you can render before playback (notifications, prompts, batch jobs, audio file generation).</li>
+                                 * <li><strong>Use <code>/waves/v1/tts/live</code></strong> when you want playback to start before the full audio is ready (long passages, latency-sensitive apps).</li>
+                                 * <li><strong>Use <code>/waves/v1/tts/live</code></strong> (WebSocket) when text arrives incrementally (LLM token streams, live captioning).</li>
+                                 * </ul>
+                                 * <h2>Key features</h2>
+                                 * <ul>
+                                 * <li>44 kHz natural, expressive synthesis</li>
+                                 * <li>Model selectable per request via <code>model</code> body parameter</li>
+                                 * <li>Cloned voice IDs (<code>voice_*</code>) work on <code>lightning_v3.1</code> — same param as catalog voices</li>
+                                 * <li>12 documented languages on <code>lightning_v3.1</code>. On <code>lightning_v3.1_pro</code>: <code>language: en</code> → UK + American accented English; <code>language: hi</code> → Indian accented English + Hindi; omit <code>language</code> → defaults to <code>en + hi</code>.</li>
+                                 * <li>Output formats: <code>pcm</code>, <code>mp3</code>, <code>wav</code>, <code>ulaw</code>, <code>alaw</code></li>
+                                 * <li>Sample rates: 8 kHz – 44.1 kHz</li>
+                                 * <li>Speed: 0.5× – 2×</li>
+                                 * <li>Per-call pronunciation dictionaries via <code>pronunciation_dicts</code></li>
+                                 * </ul>
+                                 * <h2>Examples</h2>
+                                 * <p><strong>cURL — Lightning v3.1 (default)</strong></p>
+                                 * <pre><code class="language-bash">curl -X POST &quot;https://api.smallest.ai/waves/v1/tts&quot; \
+                                 *   -H &quot;Authorization: Bearer $SMALLEST_API_KEY&quot; \
+                                 *   -H &quot;Content-Type: application/json&quot; \
+                                 *   -H &quot;Accept: audio/wav&quot; \
+                                 *   -d '{
+                                 *     &quot;text&quot;: &quot;Hello from Waves TTS.&quot;,
+                                 *     &quot;voice_id&quot;: &quot;magnus&quot;,
+                                 *     &quot;sample_rate&quot;: 24000,
+                                 *     &quot;output_format&quot;: &quot;wav&quot;
+                                 *   }' --output speech.wav
+                                 * </code></pre>
+                                 * <p><strong>cURL — Lightning v3.1 Pro (omit <code>language</code> → defaults to <code>en + hi</code>)</strong></p>
+                                 * <pre><code class="language-bash">curl -X POST &quot;https://api.smallest.ai/waves/v1/tts&quot; \
+                                 *   -H &quot;Authorization: Bearer $SMALLEST_API_KEY&quot; \
+                                 *   -H &quot;Content-Type: application/json&quot; \
+                                 *   -H &quot;Accept: audio/wav&quot; \
+                                 *   -d '{
+                                 *     &quot;text&quot;: &quot;Hello from the Lightning v3.1 Pro pool.&quot;,
+                                 *     &quot;voice_id&quot;: &quot;meher&quot;,
+                                 *     &quot;model&quot;: &quot;lightning_v3.1_pro&quot;,
+                                 *     &quot;sample_rate&quot;: 24000,
+                                 *     &quot;output_format&quot;: &quot;wav&quot;
+                                 *   }' --output speech.wav
+                                 * </code></pre>
+                                 * <p><strong>cURL — Lightning v3.1 Pro with explicit <code>language: en</code> (UK + American accented English)</strong></p>
+                                 * <pre><code class="language-bash">curl -X POST &quot;https://api.smallest.ai/waves/v1/tts&quot; \
+                                 *   -H &quot;Authorization: Bearer $SMALLEST_API_KEY&quot; \
+                                 *   -H &quot;Content-Type: application/json&quot; \
+                                 *   -H &quot;Accept: audio/wav&quot; \
+                                 *   -d '{
+                                 *     &quot;text&quot;: &quot;Good morning, this is a Pro voice speaking.&quot;,
+                                 *     &quot;voice_id&quot;: &quot;meher&quot;,
+                                 *     &quot;model&quot;: &quot;lightning_v3.1_pro&quot;,
+                                 *     &quot;language&quot;: &quot;en&quot;,
+                                 *     &quot;sample_rate&quot;: 24000,
+                                 *     &quot;output_format&quot;: &quot;wav&quot;
+                                 *   }' --output speech.wav
+                                 * </code></pre>
+                                 * <p><strong>cURL — Lightning v3.1 Pro with explicit <code>language: hi</code> (Indian accented English + Hindi)</strong></p>
+                                 * <pre><code class="language-bash">curl -X POST &quot;https://api.smallest.ai/waves/v1/tts&quot; \
+                                 *   -H &quot;Authorization: Bearer $SMALLEST_API_KEY&quot; \
+                                 *   -H &quot;Content-Type: application/json&quot; \
+                                 *   -H &quot;Accept: audio/wav&quot; \
+                                 *   -d '{
+                                 *     &quot;text&quot;: &quot;Namaste, this is an Indian-accented Pro voice.&quot;,
+                                 *     &quot;voice_id&quot;: &quot;meher&quot;,
+                                 *     &quot;model&quot;: &quot;lightning_v3.1_pro&quot;,
+                                 *     &quot;language&quot;: &quot;hi&quot;,
+                                 *     &quot;sample_rate&quot;: 24000,
+                                 *     &quot;output_format&quot;: &quot;wav&quot;
+                                 *   }' --output speech.wav
+                                 * </code></pre>
+                                 * <h2>Common gotchas</h2>
+                                 * <ul>
+                                 * <li><strong>Set <code>Accept: audio/wav</code>.</strong> Omitting it can return an empty or unplayable response.</li>
+                                 * <li><strong>Pair voice IDs with the right model.</strong> Voice catalogs differ between <code>lightning_v3.1</code> and <code>lightning_v3.1_pro</code>. The API does not reject mismatched pairings, but using a Pro-only <code>voice_id</code> with <code>model=lightning_v3.1</code> (or omitting <code>model</code>) can return wrong or hallucinated audio. Pair Pro voices with <code>model=lightning_v3.1_pro</code>; standard catalog voices with <code>model=lightning_v3.1</code> (the default).</li>
+                                 * <li><strong>Cloned voices</strong> (<code>voice_*</code> from <code>add_voice</code>) work with <code>lightning_v3.1</code> only; voice cloning is not available on <code>lightning_v3.1_pro</code>.</li>
+                                 * <li><strong>44.1 kHz output</strong> is supported but most playback environments are happy with 24 kHz — drop the sample rate if bandwidth matters.</li>
+                                 * </ul>
                                  */
-                                public SmallestAIHttpResponse<GetClonedVoicesWavesResponse> getClonedVoices(
-                                    RequestOptions requestOptions) {
+                                public SmallestAIHttpResponse<InputStream> synthesizeTts(
+                                    TtsRequest request, RequestOptions requestOptions) {
                                   HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getWavesURL()).newBuilder()
 
-                                    .addPathSegments("waves/v1/lightning-large/get_cloned_voices");if (requestOptions != null) {
+                                    .addPathSegments("waves/v1/tts");if (requestOptions != null) {
                                       requestOptions.getQueryParameters().forEach((_key, _value) -> {
                                         httpUrl.addQueryParameter(_key, _value);
                                       } );
                                     }
+                                    RequestBody body;
+                                    try {
+                                      body = RequestBody.create(ObjectMappers.JSON_MAPPER.writeValueAsBytes(request), MediaTypes.APPLICATION_JSON);
+                                    }
+                                    catch(JsonProcessingException e) {
+                                      throw new SmallestAIException("Failed to serialize request", e);
+                                    }
                                     Request okhttpRequest = new Request.Builder()
                                       .url(httpUrl.build())
-                                      .method("GET", null)
+                                      .method("POST", body)
                                       .headers(Headers.of(clientOptions.headers(requestOptions)))
+                                      .addHeader("Content-Type", "application/json")
                                       .addHeader("Accept", "application/json")
                                       .build();
                                     OkHttpClient client = clientOptions.httpClient();
@@ -1121,12 +1251,13 @@ public class RawWavesClient {
                                     if (requestOptions != null && requestOptions.getMaxRetries().isPresent()) {
                                       okhttpRequest = okhttpRequest.newBuilder().tag(RetryInterceptor.MaxRetriesOverride.class, new RetryInterceptor.MaxRetriesOverride(requestOptions.getMaxRetries().get())).build();
                                     }
-                                    try (Response response = client.newCall(okhttpRequest).execute()) {
+                                    try {
+                                      Response response = client.newCall(okhttpRequest).execute();
                                       ResponseBody responseBody = response.body();
-                                      String responseBodyString = responseBody != null ? responseBody.string() : "{}";
                                       if (response.isSuccessful()) {
-                                        return new SmallestAIHttpResponse<>(ObjectMappers.JSON_MAPPER.readValue(responseBodyString, GetClonedVoicesWavesResponse.class), response);
+                                        return new SmallestAIHttpResponse<>(new ResponseBodyInputStream(response), response);
                                       }
+                                      String responseBodyString = responseBody != null ? responseBody.string() : "{}";
                                       try {
                                         switch (response.code()) {
                                           case 400:throw new BadRequestError(ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
@@ -1149,26 +1280,91 @@ public class RawWavesClient {
                                   }
 
                                   /**
-                                   * Delete a voice clone by <code>voiceId</code>. Despite the <code>/lightning-large/</code>
-                                   * path, this endpoint deletes any voice clone on the organization,
-                                   * including clones created via <code>POST /waves/v1/voice-cloning</code>.
+                                   * Synthesize speech and stream the audio back over Server-Sent Events. Same body as <code>/waves/v1/tts</code> — the only difference is the response is a stream of base64-encoded PCM chunks instead of one binary blob.
+                                   * <p>Pick the model with the <code>model</code> body parameter, same as the sync route.</p>
+                                   * <p>&lt;Note&gt;
+                                   *   **The same URL serves the WebSocket endpoint.** `wss://api.smallest.ai/waves/v1/tts/live` accepts a WebSocket upgrade for streaming-text scenarios (LLM token streams, live captioning). The HTTP `POST` documented on this page returns SSE; use `wss://` to use the WebSocket protocol instead. See the [WebSocket reference](/waves/api-reference/api-reference/text-to-speech/tts).
+                                   * &lt;/Note&gt;</p>
+                                   * <h2>When to use this</h2>
+                                   * <ul>
+                                   * <li><strong>Use this</strong> when you want playback to start before synthesis is complete — long passages, latency-sensitive UI, live narration.</li>
+                                   * <li><strong>Use sync <code>/waves/v1/tts</code></strong> when total latency doesn't matter and you'd rather get one buffer.</li>
+                                   * <li><strong>Use <code>/waves/v1/tts/live</code></strong> (WebSocket) when the <em>text</em> arrives incrementally (LLM token stream). SSE assumes you have the full text up front.</li>
+                                   * </ul>
+                                   * <h2>How it works</h2>
+                                   * <ol>
+                                   * <li>POST your text + voice settings — same payload as <code>/waves/v1/tts</code>, plus optional <code>model</code>.</li>
+                                   * <li>The response is <code>Content-Type: text/event-stream</code>. Each chunk frame is <code>event: audio\n</code> followed by <code>data: {&quot;audio&quot;: &quot;&lt;base64-pcm&gt;&quot;}\n\n</code>.</li>
+                                   * <li>Decode each chunk's <code>audio</code> field with base64 and feed the PCM bytes to your audio pipeline (browser <code>MediaSource</code>, ffmpeg pipe, raw PCM player, etc.).</li>
+                                   * <li>A final <code>data: {&quot;done&quot;: true}\n\n</code> frame marks end of stream.</li>
+                                   * </ol>
+                                   * <h2>Examples</h2>
+                                   * <p><strong>cURL</strong></p>
+                                   * <pre><code class="language-bash">curl -N -X POST &quot;https://api.smallest.ai/waves/v1/tts/live&quot; \
+                                   *   -H &quot;Authorization: Bearer $SMALLEST_API_KEY&quot; \
+                                   *   -H &quot;Content-Type: application/json&quot; \
+                                   *   -d '{
+                                   *     &quot;text&quot;: &quot;Streaming this paragraph chunk by chunk so playback can start sooner.&quot;,
+                                   *     &quot;voice_id&quot;: &quot;magnus&quot;,
+                                   *     &quot;sample_rate&quot;: 24000,
+                                   *     &quot;output_format&quot;: &quot;pcm&quot;
+                                   *   }'
+                                   * </code></pre>
+                                   * <h2>Common gotchas</h2>
+                                   * <ul>
+                                   * <li><strong>Use a streaming-friendly client.</strong> <code>curl -N</code>, Python <code>iter_lines</code>, or a <code>fetch</code> <code>ReadableStream</code> reader. Buffering clients will hide the latency win.</li>
+                                   * <li><strong>Audio is base64 inside the event payload</strong>, not the raw event bytes. Decode the <code>data.audio</code> field per event.</li>
+                                   * <li><strong><code>output_format=pcm</code></strong> gives the lowest overhead for streaming playback. <code>wav</code>/<code>mp3</code> work but add per-chunk framing bytes.</li>
+                                   * </ul>
                                    */
-                                  public SmallestAIHttpResponse<DeleteVoiceWavesResponse> deleteVoice(
-                                      DeleteVoiceWavesRequest request) {
-                                    return deleteVoice(request,null);
+                                  public SmallestAIHttpResponse<Iterable<String>> synthesizeSseTts(
+                                      TtsRequest request) {
+                                    return synthesizeSseTts(request,null);
                                   }
 
                                   /**
-                                   * Delete a voice clone by <code>voiceId</code>. Despite the <code>/lightning-large/</code>
-                                   * path, this endpoint deletes any voice clone on the organization,
-                                   * including clones created via <code>POST /waves/v1/voice-cloning</code>.
+                                   * Synthesize speech and stream the audio back over Server-Sent Events. Same body as <code>/waves/v1/tts</code> — the only difference is the response is a stream of base64-encoded PCM chunks instead of one binary blob.
+                                   * <p>Pick the model with the <code>model</code> body parameter, same as the sync route.</p>
+                                   * <p>&lt;Note&gt;
+                                   *   **The same URL serves the WebSocket endpoint.** `wss://api.smallest.ai/waves/v1/tts/live` accepts a WebSocket upgrade for streaming-text scenarios (LLM token streams, live captioning). The HTTP `POST` documented on this page returns SSE; use `wss://` to use the WebSocket protocol instead. See the [WebSocket reference](/waves/api-reference/api-reference/text-to-speech/tts).
+                                   * &lt;/Note&gt;</p>
+                                   * <h2>When to use this</h2>
+                                   * <ul>
+                                   * <li><strong>Use this</strong> when you want playback to start before synthesis is complete — long passages, latency-sensitive UI, live narration.</li>
+                                   * <li><strong>Use sync <code>/waves/v1/tts</code></strong> when total latency doesn't matter and you'd rather get one buffer.</li>
+                                   * <li><strong>Use <code>/waves/v1/tts/live</code></strong> (WebSocket) when the <em>text</em> arrives incrementally (LLM token stream). SSE assumes you have the full text up front.</li>
+                                   * </ul>
+                                   * <h2>How it works</h2>
+                                   * <ol>
+                                   * <li>POST your text + voice settings — same payload as <code>/waves/v1/tts</code>, plus optional <code>model</code>.</li>
+                                   * <li>The response is <code>Content-Type: text/event-stream</code>. Each chunk frame is <code>event: audio\n</code> followed by <code>data: {&quot;audio&quot;: &quot;&lt;base64-pcm&gt;&quot;}\n\n</code>.</li>
+                                   * <li>Decode each chunk's <code>audio</code> field with base64 and feed the PCM bytes to your audio pipeline (browser <code>MediaSource</code>, ffmpeg pipe, raw PCM player, etc.).</li>
+                                   * <li>A final <code>data: {&quot;done&quot;: true}\n\n</code> frame marks end of stream.</li>
+                                   * </ol>
+                                   * <h2>Examples</h2>
+                                   * <p><strong>cURL</strong></p>
+                                   * <pre><code class="language-bash">curl -N -X POST &quot;https://api.smallest.ai/waves/v1/tts/live&quot; \
+                                   *   -H &quot;Authorization: Bearer $SMALLEST_API_KEY&quot; \
+                                   *   -H &quot;Content-Type: application/json&quot; \
+                                   *   -d '{
+                                   *     &quot;text&quot;: &quot;Streaming this paragraph chunk by chunk so playback can start sooner.&quot;,
+                                   *     &quot;voice_id&quot;: &quot;magnus&quot;,
+                                   *     &quot;sample_rate&quot;: 24000,
+                                   *     &quot;output_format&quot;: &quot;pcm&quot;
+                                   *   }'
+                                   * </code></pre>
+                                   * <h2>Common gotchas</h2>
+                                   * <ul>
+                                   * <li><strong>Use a streaming-friendly client.</strong> <code>curl -N</code>, Python <code>iter_lines</code>, or a <code>fetch</code> <code>ReadableStream</code> reader. Buffering clients will hide the latency win.</li>
+                                   * <li><strong>Audio is base64 inside the event payload</strong>, not the raw event bytes. Decode the <code>data.audio</code> field per event.</li>
+                                   * <li><strong><code>output_format=pcm</code></strong> gives the lowest overhead for streaming playback. <code>wav</code>/<code>mp3</code> work but add per-chunk framing bytes.</li>
+                                   * </ul>
                                    */
-                                  public SmallestAIHttpResponse<DeleteVoiceWavesResponse> deleteVoice(
-                                      DeleteVoiceWavesRequest request,
-                                      RequestOptions requestOptions) {
+                                  public SmallestAIHttpResponse<Iterable<String>> synthesizeSseTts(
+                                      TtsRequest request, RequestOptions requestOptions) {
                                     HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getWavesURL()).newBuilder()
 
-                                      .addPathSegments("waves/v1/lightning-large");if (requestOptions != null) {
+                                      .addPathSegments("waves/v1/tts/live");if (requestOptions != null) {
                                         requestOptions.getQueryParameters().forEach((_key, _value) -> {
                                           httpUrl.addQueryParameter(_key, _value);
                                         } );
@@ -1182,10 +1378,9 @@ public class RawWavesClient {
                                       }
                                       Request okhttpRequest = new Request.Builder()
                                         .url(httpUrl.build())
-                                        .method("DELETE", body)
+                                        .method("POST", body)
                                         .headers(Headers.of(clientOptions.headers(requestOptions)))
                                         .addHeader("Content-Type", "application/json")
-                                        .addHeader("Accept", "application/json")
                                         .build();
                                       OkHttpClient client = clientOptions.httpClient();
                                       if (requestOptions != null && requestOptions.getTimeout().isPresent()) {
@@ -1194,12 +1389,14 @@ public class RawWavesClient {
                                       if (requestOptions != null && requestOptions.getMaxRetries().isPresent()) {
                                         okhttpRequest = okhttpRequest.newBuilder().tag(RetryInterceptor.MaxRetriesOverride.class, new RetryInterceptor.MaxRetriesOverride(requestOptions.getMaxRetries().get())).build();
                                       }
-                                      try (Response response = client.newCall(okhttpRequest).execute()) {
+                                      client = client.newBuilder().callTimeout(0, TimeUnit.SECONDS).build();
+                                      try {
+                                        Response response = client.newCall(okhttpRequest).execute();
                                         ResponseBody responseBody = response.body();
-                                        String responseBodyString = responseBody != null ? responseBody.string() : "{}";
                                         if (response.isSuccessful()) {
-                                          return new SmallestAIHttpResponse<>(ObjectMappers.JSON_MAPPER.readValue(responseBodyString, DeleteVoiceWavesResponse.class), response);
+                                          return new SmallestAIHttpResponse<>(Stream.fromSse(String.class, new ResponseBodyReader(response)), response);
                                         }
+                                        String responseBodyString = responseBody != null ? responseBody.string() : "{}";
                                         try {
                                           switch (response.code()) {
                                             case 400:throw new BadRequestError(ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
@@ -1222,181 +1419,172 @@ public class RawWavesClient {
                                     }
 
                                     /**
-                                     * Synthesize speech from text in a single request. Pass <code>text</code> + <code>voice_id</code>, get back binary audio.
-                                     * <p>Pick the model with the <code>model</code> body parameter: default <code>lightning_v3.1</code>, or <code>lightning_v3.1_pro</code> for the Pro pool. Other request parameters are identical across models.</p>
-                                     * <p><strong>Language behaviour on <code>lightning_v3.1_pro</code>:</strong> pass <code>language: en</code> for UK + American accented English, pass <code>language: hi</code> for Indian accented English + Hindi (code-switching), or omit <code>language</code> to default to <code>en + hi</code> (mixed Indian + Western English coverage). On <code>lightning_v3.1</code> the full 12-language catalog applies (see voice catalog).</p>
+                                     * &lt;Warning&gt;<strong>Endpoint scheduled for retirement.</strong> This URL will stop accepting requests <strong>60 days from the Lightning v3.1 Pro launch (2026-05-15)</strong> — i.e. on <strong>2026-07-14</strong>. The Lightning v3.1 model itself is current and stays. Migrate to <a href="/waves/api-reference/api-reference/text-to-speech/synthesize-speech"><code>POST /waves/v1/tts</code></a> and select Lightning v3.1 via the <code>model</code> body field (default).&lt;/Warning&gt;
+                                     * <p>Synthesize speech from text in a single request. The simplest way to get audio when you have the full text up front — pass <code>text</code> + <code>voice_id</code>, get back binary audio.</p>
                                      * <h2>When to use this</h2>
                                      * <ul>
                                      * <li><strong>Use this</strong> for short utterances you can render before playback (notifications, prompts, batch jobs, audio file generation).</li>
-                                     * <li><strong>Use <code>/waves/v1/tts/live</code></strong> when you want playback to start before the full audio is ready (long passages, latency-sensitive apps).</li>
-                                     * <li><strong>Use <code>/waves/v1/tts/live</code></strong> (WebSocket) when text arrives incrementally (LLM token streams, live captioning).</li>
+                                     * <li><strong>Use the SSE streaming endpoint</strong> when you want playback to start before the full audio is ready (long passages, latency-sensitive apps).</li>
+                                     * <li><strong>Use the WebSocket endpoint</strong> when text arrives incrementally (LLM token streams, live captioning).</li>
                                      * </ul>
                                      * <h2>Key features</h2>
                                      * <ul>
                                      * <li>44 kHz natural, expressive synthesis</li>
-                                     * <li>Model selectable per request via <code>model</code> body parameter</li>
-                                     * <li>Cloned voice IDs (<code>voice_*</code>) work on <code>lightning_v3.1</code> — same param as catalog voices</li>
-                                     * <li>12 documented languages on <code>lightning_v3.1</code>. On <code>lightning_v3.1_pro</code>: <code>language: en</code> → UK + American accented English; <code>language: hi</code> → Indian accented English + Hindi; omit <code>language</code> → defaults to <code>en + hi</code>.</li>
+                                     * <li>Cloned voice IDs (<code>voice_*</code>) work — same param as catalog voices</li>
+                                     * <li>12 documented languages — see the model card for the full list</li>
                                      * <li>Output formats: <code>pcm</code>, <code>mp3</code>, <code>wav</code>, <code>ulaw</code>, <code>alaw</code></li>
                                      * <li>Sample rates: 8 kHz – 44.1 kHz</li>
                                      * <li>Speed: 0.5× – 2×</li>
                                      * <li>Per-call pronunciation dictionaries via <code>pronunciation_dicts</code></li>
                                      * </ul>
                                      * <h2>Examples</h2>
-                                     * <p><strong>cURL — Lightning v3.1 (default)</strong></p>
-                                     * <pre><code class="language-bash">curl -X POST &quot;https://api.smallest.ai/waves/v1/tts&quot; \
+                                     * <p><strong>cURL</strong></p>
+                                     * <pre><code class="language-bash">curl -X POST &quot;https://api.smallest.ai/waves/v1/lightning-v3.1/get_speech&quot; \
                                      *   -H &quot;Authorization: Bearer $SMALLEST_API_KEY&quot; \
                                      *   -H &quot;Content-Type: application/json&quot; \
                                      *   -H &quot;Accept: audio/wav&quot; \
                                      *   -d '{
-                                     *     &quot;text&quot;: &quot;Hello from Waves TTS.&quot;,
+                                     *     &quot;text&quot;: &quot;Hello from Lightning v3.1.&quot;,
                                      *     &quot;voice_id&quot;: &quot;magnus&quot;,
                                      *     &quot;sample_rate&quot;: 24000,
                                      *     &quot;output_format&quot;: &quot;wav&quot;
                                      *   }' --output speech.wav
                                      * </code></pre>
-                                     * <p><strong>cURL — Lightning v3.1 Pro (omit <code>language</code> → defaults to <code>en + hi</code>)</strong></p>
-                                     * <pre><code class="language-bash">curl -X POST &quot;https://api.smallest.ai/waves/v1/tts&quot; \
-                                     *   -H &quot;Authorization: Bearer $SMALLEST_API_KEY&quot; \
-                                     *   -H &quot;Content-Type: application/json&quot; \
-                                     *   -H &quot;Accept: audio/wav&quot; \
-                                     *   -d '{
-                                     *     &quot;text&quot;: &quot;Hello from the Lightning v3.1 Pro pool.&quot;,
-                                     *     &quot;voice_id&quot;: &quot;meher&quot;,
-                                     *     &quot;model&quot;: &quot;lightning_v3.1_pro&quot;,
-                                     *     &quot;sample_rate&quot;: 24000,
-                                     *     &quot;output_format&quot;: &quot;wav&quot;
-                                     *   }' --output speech.wav
+                                     * <p><strong>Python</strong> (<code>pip install smallestai&gt;=4.4.0</code>)</p>
+                                     * <pre><code class="language-python">from smallestai import SmallestAI
+                                     *
+                                     * client = SmallestAI(api_key=&quot;YOUR_API_KEY&quot;)
+                                     *
+                                     * with open(&quot;speech.wav&quot;, &quot;wb&quot;) as f:
+                                     *     for chunk in client.waves.synthesize_lightning_v3_1(
+                                     *         text=&quot;Hello from Lightning v3.1.&quot;,
+                                     *         voice_id=&quot;magnus&quot;,
+                                     *         sample_rate=24000,
+                                     *         output_format=&quot;wav&quot;,
+                                     *         # Optional: cloned voice support
+                                     *         # voice_id=&quot;voice_FlPKRWI7DX&quot;,
+                                     *         # Optional: pin pronunciations for specific words
+                                     *         # pronunciation_dicts=[&quot;&lt;your dict id&gt;&quot;],
+                                     *     ):
+                                     *         f.write(chunk)
                                      * </code></pre>
-                                     * <p><strong>cURL — Lightning v3.1 Pro with explicit <code>language: en</code> (UK + American accented English)</strong></p>
-                                     * <pre><code class="language-bash">curl -X POST &quot;https://api.smallest.ai/waves/v1/tts&quot; \
-                                     *   -H &quot;Authorization: Bearer $SMALLEST_API_KEY&quot; \
-                                     *   -H &quot;Content-Type: application/json&quot; \
-                                     *   -H &quot;Accept: audio/wav&quot; \
-                                     *   -d '{
-                                     *     &quot;text&quot;: &quot;Good morning, this is a Pro voice speaking.&quot;,
-                                     *     &quot;voice_id&quot;: &quot;meher&quot;,
-                                     *     &quot;model&quot;: &quot;lightning_v3.1_pro&quot;,
-                                     *     &quot;language&quot;: &quot;en&quot;,
-                                     *     &quot;sample_rate&quot;: 24000,
-                                     *     &quot;output_format&quot;: &quot;wav&quot;
-                                     *   }' --output speech.wav
-                                     * </code></pre>
-                                     * <p><strong>cURL — Lightning v3.1 Pro with explicit <code>language: hi</code> (Indian accented English + Hindi)</strong></p>
-                                     * <pre><code class="language-bash">curl -X POST &quot;https://api.smallest.ai/waves/v1/tts&quot; \
-                                     *   -H &quot;Authorization: Bearer $SMALLEST_API_KEY&quot; \
-                                     *   -H &quot;Content-Type: application/json&quot; \
-                                     *   -H &quot;Accept: audio/wav&quot; \
-                                     *   -d '{
-                                     *     &quot;text&quot;: &quot;Namaste, this is an Indian-accented Pro voice.&quot;,
-                                     *     &quot;voice_id&quot;: &quot;meher&quot;,
-                                     *     &quot;model&quot;: &quot;lightning_v3.1_pro&quot;,
-                                     *     &quot;language&quot;: &quot;hi&quot;,
-                                     *     &quot;sample_rate&quot;: 24000,
-                                     *     &quot;output_format&quot;: &quot;wav&quot;
-                                     *   }' --output speech.wav
+                                     * <p><strong>JavaScript / TypeScript</strong> (using <code>fetch</code>)</p>
+                                     * <pre><code class="language-typescript">const res = await fetch(&quot;https://api.smallest.ai/waves/v1/lightning-v3.1/get_speech&quot;, {
+                                     *   method: &quot;POST&quot;,
+                                     *   headers: {
+                                     *     Authorization: `Bearer ${process.env.SMALLEST_API_KEY}`,
+                                     *     &quot;Content-Type&quot;: &quot;application/json&quot;,
+                                     *     Accept: &quot;audio/wav&quot;,
+                                     *   },
+                                     *   body: JSON.stringify({
+                                     *     text: &quot;Hello from Lightning v3.1.&quot;,
+                                     *     voice_id: &quot;magnus&quot;,
+                                     *     sample_rate: 24000,
+                                     *     output_format: &quot;wav&quot;,
+                                     *   }),
+                                     * });
+                                     * const audio = Buffer.from(await res.arrayBuffer());
+                                     * require(&quot;node:fs&quot;).writeFileSync(&quot;speech.wav&quot;, audio);
                                      * </code></pre>
                                      * <h2>Common gotchas</h2>
                                      * <ul>
                                      * <li><strong>Set <code>Accept: audio/wav</code>.</strong> Omitting it can return an empty or unplayable response.</li>
-                                     * <li><strong>Pair voice IDs with the right model.</strong> Voice catalogs differ between <code>lightning_v3.1</code> and <code>lightning_v3.1_pro</code>. The API does not reject mismatched pairings, but using a Pro-only <code>voice_id</code> with <code>model=lightning_v3.1</code> (or omitting <code>model</code>) can return wrong or hallucinated audio. Pair Pro voices with <code>model=lightning_v3.1_pro</code>; standard catalog voices with <code>model=lightning_v3.1</code> (the default).</li>
-                                     * <li><strong>Cloned voices</strong> (<code>voice_*</code> from <code>add_voice</code>) work with <code>lightning_v3.1</code> only; voice cloning is not available on <code>lightning_v3.1_pro</code>.</li>
+                                     * <li><strong>Cloned voices</strong> (<code>voice_*</code> from <code>add_voice</code>) work on this endpoint and support <code>pronunciation_dicts</code>.</li>
+                                     * <li><strong><code>pronunciation_dicts</code> validates IDs at request time.</strong> Passing an unknown ID returns <code>Invalid input data</code> — create the dict first via the pronunciation-dicts endpoint and save the returned <code>id</code>.</li>
+                                     * <li><strong>Pronunciation matching is case-sensitive.</strong> Add both <code>Synopsis</code> and <code>synopsis</code> if your text uses both casings.</li>
                                      * <li><strong>44.1 kHz output</strong> is supported but most playback environments are happy with 24 kHz — drop the sample rate if bandwidth matters.</li>
+                                     * <li><strong>JavaScript / TypeScript</strong>: the official <code>smallestai</code> npm package predates Lightning v3.1, so call this endpoint with <code>fetch</code> or <code>axios</code> as shown above.</li>
                                      * </ul>
                                      */
-                                    public SmallestAIHttpResponse<InputStream> synthesizeTts(
-                                        TtsRequest request) {
-                                      return synthesizeTts(request,null);
+                                    public SmallestAIHttpResponse<InputStream> synthesizeLightningV31(
+                                        LightningV31Request request) {
+                                      return synthesizeLightningV31(request,null);
                                     }
 
                                     /**
-                                     * Synthesize speech from text in a single request. Pass <code>text</code> + <code>voice_id</code>, get back binary audio.
-                                     * <p>Pick the model with the <code>model</code> body parameter: default <code>lightning_v3.1</code>, or <code>lightning_v3.1_pro</code> for the Pro pool. Other request parameters are identical across models.</p>
-                                     * <p><strong>Language behaviour on <code>lightning_v3.1_pro</code>:</strong> pass <code>language: en</code> for UK + American accented English, pass <code>language: hi</code> for Indian accented English + Hindi (code-switching), or omit <code>language</code> to default to <code>en + hi</code> (mixed Indian + Western English coverage). On <code>lightning_v3.1</code> the full 12-language catalog applies (see voice catalog).</p>
+                                     * &lt;Warning&gt;<strong>Endpoint scheduled for retirement.</strong> This URL will stop accepting requests <strong>60 days from the Lightning v3.1 Pro launch (2026-05-15)</strong> — i.e. on <strong>2026-07-14</strong>. The Lightning v3.1 model itself is current and stays. Migrate to <a href="/waves/api-reference/api-reference/text-to-speech/synthesize-speech"><code>POST /waves/v1/tts</code></a> and select Lightning v3.1 via the <code>model</code> body field (default).&lt;/Warning&gt;
+                                     * <p>Synthesize speech from text in a single request. The simplest way to get audio when you have the full text up front — pass <code>text</code> + <code>voice_id</code>, get back binary audio.</p>
                                      * <h2>When to use this</h2>
                                      * <ul>
                                      * <li><strong>Use this</strong> for short utterances you can render before playback (notifications, prompts, batch jobs, audio file generation).</li>
-                                     * <li><strong>Use <code>/waves/v1/tts/live</code></strong> when you want playback to start before the full audio is ready (long passages, latency-sensitive apps).</li>
-                                     * <li><strong>Use <code>/waves/v1/tts/live</code></strong> (WebSocket) when text arrives incrementally (LLM token streams, live captioning).</li>
+                                     * <li><strong>Use the SSE streaming endpoint</strong> when you want playback to start before the full audio is ready (long passages, latency-sensitive apps).</li>
+                                     * <li><strong>Use the WebSocket endpoint</strong> when text arrives incrementally (LLM token streams, live captioning).</li>
                                      * </ul>
                                      * <h2>Key features</h2>
                                      * <ul>
                                      * <li>44 kHz natural, expressive synthesis</li>
-                                     * <li>Model selectable per request via <code>model</code> body parameter</li>
-                                     * <li>Cloned voice IDs (<code>voice_*</code>) work on <code>lightning_v3.1</code> — same param as catalog voices</li>
-                                     * <li>12 documented languages on <code>lightning_v3.1</code>. On <code>lightning_v3.1_pro</code>: <code>language: en</code> → UK + American accented English; <code>language: hi</code> → Indian accented English + Hindi; omit <code>language</code> → defaults to <code>en + hi</code>.</li>
+                                     * <li>Cloned voice IDs (<code>voice_*</code>) work — same param as catalog voices</li>
+                                     * <li>12 documented languages — see the model card for the full list</li>
                                      * <li>Output formats: <code>pcm</code>, <code>mp3</code>, <code>wav</code>, <code>ulaw</code>, <code>alaw</code></li>
                                      * <li>Sample rates: 8 kHz – 44.1 kHz</li>
                                      * <li>Speed: 0.5× – 2×</li>
                                      * <li>Per-call pronunciation dictionaries via <code>pronunciation_dicts</code></li>
                                      * </ul>
                                      * <h2>Examples</h2>
-                                     * <p><strong>cURL — Lightning v3.1 (default)</strong></p>
-                                     * <pre><code class="language-bash">curl -X POST &quot;https://api.smallest.ai/waves/v1/tts&quot; \
+                                     * <p><strong>cURL</strong></p>
+                                     * <pre><code class="language-bash">curl -X POST &quot;https://api.smallest.ai/waves/v1/lightning-v3.1/get_speech&quot; \
                                      *   -H &quot;Authorization: Bearer $SMALLEST_API_KEY&quot; \
                                      *   -H &quot;Content-Type: application/json&quot; \
                                      *   -H &quot;Accept: audio/wav&quot; \
                                      *   -d '{
-                                     *     &quot;text&quot;: &quot;Hello from Waves TTS.&quot;,
+                                     *     &quot;text&quot;: &quot;Hello from Lightning v3.1.&quot;,
                                      *     &quot;voice_id&quot;: &quot;magnus&quot;,
                                      *     &quot;sample_rate&quot;: 24000,
                                      *     &quot;output_format&quot;: &quot;wav&quot;
                                      *   }' --output speech.wav
                                      * </code></pre>
-                                     * <p><strong>cURL — Lightning v3.1 Pro (omit <code>language</code> → defaults to <code>en + hi</code>)</strong></p>
-                                     * <pre><code class="language-bash">curl -X POST &quot;https://api.smallest.ai/waves/v1/tts&quot; \
-                                     *   -H &quot;Authorization: Bearer $SMALLEST_API_KEY&quot; \
-                                     *   -H &quot;Content-Type: application/json&quot; \
-                                     *   -H &quot;Accept: audio/wav&quot; \
-                                     *   -d '{
-                                     *     &quot;text&quot;: &quot;Hello from the Lightning v3.1 Pro pool.&quot;,
-                                     *     &quot;voice_id&quot;: &quot;meher&quot;,
-                                     *     &quot;model&quot;: &quot;lightning_v3.1_pro&quot;,
-                                     *     &quot;sample_rate&quot;: 24000,
-                                     *     &quot;output_format&quot;: &quot;wav&quot;
-                                     *   }' --output speech.wav
+                                     * <p><strong>Python</strong> (<code>pip install smallestai&gt;=4.4.0</code>)</p>
+                                     * <pre><code class="language-python">from smallestai import SmallestAI
+                                     *
+                                     * client = SmallestAI(api_key=&quot;YOUR_API_KEY&quot;)
+                                     *
+                                     * with open(&quot;speech.wav&quot;, &quot;wb&quot;) as f:
+                                     *     for chunk in client.waves.synthesize_lightning_v3_1(
+                                     *         text=&quot;Hello from Lightning v3.1.&quot;,
+                                     *         voice_id=&quot;magnus&quot;,
+                                     *         sample_rate=24000,
+                                     *         output_format=&quot;wav&quot;,
+                                     *         # Optional: cloned voice support
+                                     *         # voice_id=&quot;voice_FlPKRWI7DX&quot;,
+                                     *         # Optional: pin pronunciations for specific words
+                                     *         # pronunciation_dicts=[&quot;&lt;your dict id&gt;&quot;],
+                                     *     ):
+                                     *         f.write(chunk)
                                      * </code></pre>
-                                     * <p><strong>cURL — Lightning v3.1 Pro with explicit <code>language: en</code> (UK + American accented English)</strong></p>
-                                     * <pre><code class="language-bash">curl -X POST &quot;https://api.smallest.ai/waves/v1/tts&quot; \
-                                     *   -H &quot;Authorization: Bearer $SMALLEST_API_KEY&quot; \
-                                     *   -H &quot;Content-Type: application/json&quot; \
-                                     *   -H &quot;Accept: audio/wav&quot; \
-                                     *   -d '{
-                                     *     &quot;text&quot;: &quot;Good morning, this is a Pro voice speaking.&quot;,
-                                     *     &quot;voice_id&quot;: &quot;meher&quot;,
-                                     *     &quot;model&quot;: &quot;lightning_v3.1_pro&quot;,
-                                     *     &quot;language&quot;: &quot;en&quot;,
-                                     *     &quot;sample_rate&quot;: 24000,
-                                     *     &quot;output_format&quot;: &quot;wav&quot;
-                                     *   }' --output speech.wav
-                                     * </code></pre>
-                                     * <p><strong>cURL — Lightning v3.1 Pro with explicit <code>language: hi</code> (Indian accented English + Hindi)</strong></p>
-                                     * <pre><code class="language-bash">curl -X POST &quot;https://api.smallest.ai/waves/v1/tts&quot; \
-                                     *   -H &quot;Authorization: Bearer $SMALLEST_API_KEY&quot; \
-                                     *   -H &quot;Content-Type: application/json&quot; \
-                                     *   -H &quot;Accept: audio/wav&quot; \
-                                     *   -d '{
-                                     *     &quot;text&quot;: &quot;Namaste, this is an Indian-accented Pro voice.&quot;,
-                                     *     &quot;voice_id&quot;: &quot;meher&quot;,
-                                     *     &quot;model&quot;: &quot;lightning_v3.1_pro&quot;,
-                                     *     &quot;language&quot;: &quot;hi&quot;,
-                                     *     &quot;sample_rate&quot;: 24000,
-                                     *     &quot;output_format&quot;: &quot;wav&quot;
-                                     *   }' --output speech.wav
+                                     * <p><strong>JavaScript / TypeScript</strong> (using <code>fetch</code>)</p>
+                                     * <pre><code class="language-typescript">const res = await fetch(&quot;https://api.smallest.ai/waves/v1/lightning-v3.1/get_speech&quot;, {
+                                     *   method: &quot;POST&quot;,
+                                     *   headers: {
+                                     *     Authorization: `Bearer ${process.env.SMALLEST_API_KEY}`,
+                                     *     &quot;Content-Type&quot;: &quot;application/json&quot;,
+                                     *     Accept: &quot;audio/wav&quot;,
+                                     *   },
+                                     *   body: JSON.stringify({
+                                     *     text: &quot;Hello from Lightning v3.1.&quot;,
+                                     *     voice_id: &quot;magnus&quot;,
+                                     *     sample_rate: 24000,
+                                     *     output_format: &quot;wav&quot;,
+                                     *   }),
+                                     * });
+                                     * const audio = Buffer.from(await res.arrayBuffer());
+                                     * require(&quot;node:fs&quot;).writeFileSync(&quot;speech.wav&quot;, audio);
                                      * </code></pre>
                                      * <h2>Common gotchas</h2>
                                      * <ul>
                                      * <li><strong>Set <code>Accept: audio/wav</code>.</strong> Omitting it can return an empty or unplayable response.</li>
-                                     * <li><strong>Pair voice IDs with the right model.</strong> Voice catalogs differ between <code>lightning_v3.1</code> and <code>lightning_v3.1_pro</code>. The API does not reject mismatched pairings, but using a Pro-only <code>voice_id</code> with <code>model=lightning_v3.1</code> (or omitting <code>model</code>) can return wrong or hallucinated audio. Pair Pro voices with <code>model=lightning_v3.1_pro</code>; standard catalog voices with <code>model=lightning_v3.1</code> (the default).</li>
-                                     * <li><strong>Cloned voices</strong> (<code>voice_*</code> from <code>add_voice</code>) work with <code>lightning_v3.1</code> only; voice cloning is not available on <code>lightning_v3.1_pro</code>.</li>
+                                     * <li><strong>Cloned voices</strong> (<code>voice_*</code> from <code>add_voice</code>) work on this endpoint and support <code>pronunciation_dicts</code>.</li>
+                                     * <li><strong><code>pronunciation_dicts</code> validates IDs at request time.</strong> Passing an unknown ID returns <code>Invalid input data</code> — create the dict first via the pronunciation-dicts endpoint and save the returned <code>id</code>.</li>
+                                     * <li><strong>Pronunciation matching is case-sensitive.</strong> Add both <code>Synopsis</code> and <code>synopsis</code> if your text uses both casings.</li>
                                      * <li><strong>44.1 kHz output</strong> is supported but most playback environments are happy with 24 kHz — drop the sample rate if bandwidth matters.</li>
+                                     * <li><strong>JavaScript / TypeScript</strong>: the official <code>smallestai</code> npm package predates Lightning v3.1, so call this endpoint with <code>fetch</code> or <code>axios</code> as shown above.</li>
                                      * </ul>
                                      */
-                                    public SmallestAIHttpResponse<InputStream> synthesizeTts(
-                                        TtsRequest request, RequestOptions requestOptions) {
+                                    public SmallestAIHttpResponse<InputStream> synthesizeLightningV31(
+                                        LightningV31Request request,
+                                        RequestOptions requestOptions) {
                                       HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getWavesURL()).newBuilder()
 
-                                        .addPathSegments("waves/v1/tts");if (requestOptions != null) {
+                                        .addPathSegments("waves/v1/lightning-v3.1/get_speech");if (requestOptions != null) {
                                           requestOptions.getQueryParameters().forEach((_key, _value) -> {
                                             httpUrl.addQueryParameter(_key, _value);
                                           } );
@@ -1451,27 +1639,24 @@ public class RawWavesClient {
                                       }
 
                                       /**
-                                       * Synthesize speech and stream the audio back over Server-Sent Events. Same body as <code>/waves/v1/tts</code> — the only difference is the response is a stream of base64-encoded PCM chunks instead of one binary blob.
-                                       * <p>Pick the model with the <code>model</code> body parameter, same as the sync route.</p>
-                                       * <p>&lt;Note&gt;
-                                       *   **The same URL serves the WebSocket endpoint.** `wss://api.smallest.ai/waves/v1/tts/live` accepts a WebSocket upgrade for streaming-text scenarios (LLM token streams, live captioning). The HTTP `POST` documented on this page returns SSE; use `wss://` to use the WebSocket protocol instead. See the [WebSocket reference](/waves/api-reference/api-reference/text-to-speech/tts).
-                                       * &lt;/Note&gt;</p>
+                                       * &lt;Warning&gt;<strong>Endpoint scheduled for retirement.</strong> This URL will stop accepting requests <strong>60 days from the Lightning v3.1 Pro launch (2026-05-15)</strong> — i.e. on <strong>2026-07-14</strong>. The Lightning v3.1 model itself is current and stays. Migrate to <a href="/waves/api-reference/api-reference/text-to-speech/synthesize-speech-sse"><code>POST /waves/v1/tts/live</code></a> and select Lightning v3.1 via the <code>model</code> body field (default).&lt;/Warning&gt;
+                                       * <p>Synthesize speech and stream the audio back over Server-Sent Events. The body and parameters are identical to the sync <code>/get_speech</code> endpoint — the difference is the response is a stream of base64-encoded PCM chunks instead of one binary blob.</p>
                                        * <h2>When to use this</h2>
                                        * <ul>
                                        * <li><strong>Use this</strong> when you want playback to start before synthesis is complete — long passages, latency-sensitive UI, live narration.</li>
-                                       * <li><strong>Use sync <code>/waves/v1/tts</code></strong> when total latency doesn't matter and you'd rather get one buffer.</li>
-                                       * <li><strong>Use <code>/waves/v1/tts/live</code></strong> (WebSocket) when the <em>text</em> arrives incrementally (LLM token stream). SSE assumes you have the full text up front.</li>
+                                       * <li><strong>Use sync <code>/get_speech</code></strong> when total latency doesn't matter and you'd rather get one buffer.</li>
+                                       * <li><strong>Use the WebSocket endpoint</strong> when the <em>text</em> arrives incrementally (LLM token stream). SSE assumes you have the full text up front.</li>
                                        * </ul>
                                        * <h2>How it works</h2>
                                        * <ol>
-                                       * <li>POST your text + voice settings — same payload as <code>/waves/v1/tts</code>, plus optional <code>model</code>.</li>
+                                       * <li>POST your text + voice settings — same payload as <code>/get_speech</code>.</li>
                                        * <li>The response is <code>Content-Type: text/event-stream</code>. Each chunk frame is <code>event: audio\n</code> followed by <code>data: {&quot;audio&quot;: &quot;&lt;base64-pcm&gt;&quot;}\n\n</code>.</li>
                                        * <li>Decode each chunk's <code>audio</code> field with base64 and feed the PCM bytes to your audio pipeline (browser <code>MediaSource</code>, ffmpeg pipe, raw PCM player, etc.).</li>
                                        * <li>A final <code>data: {&quot;done&quot;: true}\n\n</code> frame marks end of stream.</li>
                                        * </ol>
                                        * <h2>Examples</h2>
                                        * <p><strong>cURL</strong></p>
-                                       * <pre><code class="language-bash">curl -N -X POST &quot;https://api.smallest.ai/waves/v1/tts/live&quot; \
+                                       * <pre><code class="language-bash">curl -N -X POST &quot;https://api.smallest.ai/waves/v1/lightning-v3.1/stream&quot; \
                                        *   -H &quot;Authorization: Bearer $SMALLEST_API_KEY&quot; \
                                        *   -H &quot;Content-Type: application/json&quot; \
                                        *   -d '{
@@ -1481,40 +1666,96 @@ public class RawWavesClient {
                                        *     &quot;output_format&quot;: &quot;pcm&quot;
                                        *   }'
                                        * </code></pre>
+                                       * <p><strong>Python</strong> (<code>pip install smallestai&gt;=4.4.0</code>)</p>
+                                       * <pre><code class="language-python">import base64
+                                       * from smallestai import SmallestAI
+                                       *
+                                       * client = SmallestAI(api_key=&quot;YOUR_API_KEY&quot;)
+                                       *
+                                       * with open(&quot;stream.pcm&quot;, &quot;wb&quot;) as f:
+                                       *     for chunk in client.waves.synthesize_sse_lightning_v3_1(
+                                       *         text=&quot;Streaming this paragraph chunk by chunk so playback can start sooner.&quot;,
+                                       *         voice_id=&quot;magnus&quot;,
+                                       *         sample_rate=24000,
+                                       *         output_format=&quot;pcm&quot;,
+                                       *     ):
+                                       *         # Each chunk is `{&quot;audio&quot;: &quot;&lt;base64-encoded PCM&gt;&quot;}`.
+                                       *         # Decode and pipe to your audio pipeline.
+                                       *         if chunk.get(&quot;audio&quot;):
+                                       *             f.write(base64.b64decode(chunk[&quot;audio&quot;]))
+                                       * </code></pre>
+                                       * <p><strong>JavaScript / TypeScript</strong> (using <code>fetch</code> + a reader)</p>
+                                       * <pre><code class="language-typescript">const res = await fetch(&quot;https://api.smallest.ai/waves/v1/lightning-v3.1/stream&quot;, {
+                                       *   method: &quot;POST&quot;,
+                                       *   headers: {
+                                       *     Authorization: `Bearer ${process.env.SMALLEST_API_KEY}`,
+                                       *     &quot;Content-Type&quot;: &quot;application/json&quot;,
+                                       *   },
+                                       *   body: JSON.stringify({
+                                       *     text: &quot;Streaming this paragraph chunk by chunk so playback can start sooner.&quot;,
+                                       *     voice_id: &quot;magnus&quot;,
+                                       *     sample_rate: 24000,
+                                       *     output_format: &quot;pcm&quot;,
+                                       *   }),
+                                       * });
+                                       *
+                                       * const reader = res.body!.getReader();
+                                       * const decoder = new TextDecoder();
+                                       * let buf = &quot;&quot;;
+                                       * let finished = false;
+                                       * while (!finished) {
+                                       *   const { value, done } = await reader.read();
+                                       *   if (done) break;
+                                       *   buf += decoder.decode(value);
+                                       *   const events = buf.split(&quot;\n\n&quot;);
+                                       *   buf = events.pop() ?? &quot;&quot;;
+                                       *   for (const ev of events) {
+                                       *     // SSE frames are &quot;event: audio\ndata: {json}&quot; or just &quot;data: {json}&quot;.
+                                       *     // We only care about the data line — pull it out and parse.
+                                       *     const dataLine = ev.split(&quot;\n&quot;).find((l) =&gt; l.startsWith(&quot;data:&quot;));
+                                       *     if (!dataLine) continue;
+                                       *     const payload = JSON.parse(dataLine.slice(5).trim());
+                                       *     if (payload.done) { finished = true; break; }
+                                       *     if (payload.audio) {
+                                       *       const pcm = Buffer.from(payload.audio, &quot;base64&quot;);
+                                       *       // … hand pcm to your audio pipeline
+                                       *     }
+                                       *   }
+                                       * }
+                                       * </code></pre>
                                        * <h2>Common gotchas</h2>
                                        * <ul>
                                        * <li><strong>Use a streaming-friendly client.</strong> <code>curl -N</code>, Python <code>iter_lines</code>, or a <code>fetch</code> <code>ReadableStream</code> reader. Buffering clients will hide the latency win.</li>
                                        * <li><strong>Audio is base64 inside the event payload</strong>, not the raw event bytes. Decode the <code>data.audio</code> field per event.</li>
                                        * <li><strong><code>output_format=pcm</code></strong> gives the lowest overhead for streaming playback. <code>wav</code>/<code>mp3</code> work but add per-chunk framing bytes.</li>
+                                       * <li><strong>First-chunk latency</strong> depends on model warm-up + network distance. Use <code>output_format=pcm</code> and a streaming-friendly client to minimize what you can control.</li>
+                                       * <li><strong>JavaScript / TypeScript</strong>: the official <code>smallestai</code> npm package predates Lightning v3.1, so call this endpoint with <code>fetch</code> as shown above.</li>
                                        * </ul>
                                        */
-                                      public SmallestAIHttpResponse<Iterable<String>> synthesizeSseTts(
-                                          TtsRequest request) {
-                                        return synthesizeSseTts(request,null);
+                                      public SmallestAIHttpResponse<Iterable<Object>> synthesizeSseLightningV31(
+                                          LightningV31Request request) {
+                                        return synthesizeSseLightningV31(request,null);
                                       }
 
                                       /**
-                                       * Synthesize speech and stream the audio back over Server-Sent Events. Same body as <code>/waves/v1/tts</code> — the only difference is the response is a stream of base64-encoded PCM chunks instead of one binary blob.
-                                       * <p>Pick the model with the <code>model</code> body parameter, same as the sync route.</p>
-                                       * <p>&lt;Note&gt;
-                                       *   **The same URL serves the WebSocket endpoint.** `wss://api.smallest.ai/waves/v1/tts/live` accepts a WebSocket upgrade for streaming-text scenarios (LLM token streams, live captioning). The HTTP `POST` documented on this page returns SSE; use `wss://` to use the WebSocket protocol instead. See the [WebSocket reference](/waves/api-reference/api-reference/text-to-speech/tts).
-                                       * &lt;/Note&gt;</p>
+                                       * &lt;Warning&gt;<strong>Endpoint scheduled for retirement.</strong> This URL will stop accepting requests <strong>60 days from the Lightning v3.1 Pro launch (2026-05-15)</strong> — i.e. on <strong>2026-07-14</strong>. The Lightning v3.1 model itself is current and stays. Migrate to <a href="/waves/api-reference/api-reference/text-to-speech/synthesize-speech-sse"><code>POST /waves/v1/tts/live</code></a> and select Lightning v3.1 via the <code>model</code> body field (default).&lt;/Warning&gt;
+                                       * <p>Synthesize speech and stream the audio back over Server-Sent Events. The body and parameters are identical to the sync <code>/get_speech</code> endpoint — the difference is the response is a stream of base64-encoded PCM chunks instead of one binary blob.</p>
                                        * <h2>When to use this</h2>
                                        * <ul>
                                        * <li><strong>Use this</strong> when you want playback to start before synthesis is complete — long passages, latency-sensitive UI, live narration.</li>
-                                       * <li><strong>Use sync <code>/waves/v1/tts</code></strong> when total latency doesn't matter and you'd rather get one buffer.</li>
-                                       * <li><strong>Use <code>/waves/v1/tts/live</code></strong> (WebSocket) when the <em>text</em> arrives incrementally (LLM token stream). SSE assumes you have the full text up front.</li>
+                                       * <li><strong>Use sync <code>/get_speech</code></strong> when total latency doesn't matter and you'd rather get one buffer.</li>
+                                       * <li><strong>Use the WebSocket endpoint</strong> when the <em>text</em> arrives incrementally (LLM token stream). SSE assumes you have the full text up front.</li>
                                        * </ul>
                                        * <h2>How it works</h2>
                                        * <ol>
-                                       * <li>POST your text + voice settings — same payload as <code>/waves/v1/tts</code>, plus optional <code>model</code>.</li>
+                                       * <li>POST your text + voice settings — same payload as <code>/get_speech</code>.</li>
                                        * <li>The response is <code>Content-Type: text/event-stream</code>. Each chunk frame is <code>event: audio\n</code> followed by <code>data: {&quot;audio&quot;: &quot;&lt;base64-pcm&gt;&quot;}\n\n</code>.</li>
                                        * <li>Decode each chunk's <code>audio</code> field with base64 and feed the PCM bytes to your audio pipeline (browser <code>MediaSource</code>, ffmpeg pipe, raw PCM player, etc.).</li>
                                        * <li>A final <code>data: {&quot;done&quot;: true}\n\n</code> frame marks end of stream.</li>
                                        * </ol>
                                        * <h2>Examples</h2>
                                        * <p><strong>cURL</strong></p>
-                                       * <pre><code class="language-bash">curl -N -X POST &quot;https://api.smallest.ai/waves/v1/tts/live&quot; \
+                                       * <pre><code class="language-bash">curl -N -X POST &quot;https://api.smallest.ai/waves/v1/lightning-v3.1/stream&quot; \
                                        *   -H &quot;Authorization: Bearer $SMALLEST_API_KEY&quot; \
                                        *   -H &quot;Content-Type: application/json&quot; \
                                        *   -d '{
@@ -1524,18 +1765,78 @@ public class RawWavesClient {
                                        *     &quot;output_format&quot;: &quot;pcm&quot;
                                        *   }'
                                        * </code></pre>
+                                       * <p><strong>Python</strong> (<code>pip install smallestai&gt;=4.4.0</code>)</p>
+                                       * <pre><code class="language-python">import base64
+                                       * from smallestai import SmallestAI
+                                       *
+                                       * client = SmallestAI(api_key=&quot;YOUR_API_KEY&quot;)
+                                       *
+                                       * with open(&quot;stream.pcm&quot;, &quot;wb&quot;) as f:
+                                       *     for chunk in client.waves.synthesize_sse_lightning_v3_1(
+                                       *         text=&quot;Streaming this paragraph chunk by chunk so playback can start sooner.&quot;,
+                                       *         voice_id=&quot;magnus&quot;,
+                                       *         sample_rate=24000,
+                                       *         output_format=&quot;pcm&quot;,
+                                       *     ):
+                                       *         # Each chunk is `{&quot;audio&quot;: &quot;&lt;base64-encoded PCM&gt;&quot;}`.
+                                       *         # Decode and pipe to your audio pipeline.
+                                       *         if chunk.get(&quot;audio&quot;):
+                                       *             f.write(base64.b64decode(chunk[&quot;audio&quot;]))
+                                       * </code></pre>
+                                       * <p><strong>JavaScript / TypeScript</strong> (using <code>fetch</code> + a reader)</p>
+                                       * <pre><code class="language-typescript">const res = await fetch(&quot;https://api.smallest.ai/waves/v1/lightning-v3.1/stream&quot;, {
+                                       *   method: &quot;POST&quot;,
+                                       *   headers: {
+                                       *     Authorization: `Bearer ${process.env.SMALLEST_API_KEY}`,
+                                       *     &quot;Content-Type&quot;: &quot;application/json&quot;,
+                                       *   },
+                                       *   body: JSON.stringify({
+                                       *     text: &quot;Streaming this paragraph chunk by chunk so playback can start sooner.&quot;,
+                                       *     voice_id: &quot;magnus&quot;,
+                                       *     sample_rate: 24000,
+                                       *     output_format: &quot;pcm&quot;,
+                                       *   }),
+                                       * });
+                                       *
+                                       * const reader = res.body!.getReader();
+                                       * const decoder = new TextDecoder();
+                                       * let buf = &quot;&quot;;
+                                       * let finished = false;
+                                       * while (!finished) {
+                                       *   const { value, done } = await reader.read();
+                                       *   if (done) break;
+                                       *   buf += decoder.decode(value);
+                                       *   const events = buf.split(&quot;\n\n&quot;);
+                                       *   buf = events.pop() ?? &quot;&quot;;
+                                       *   for (const ev of events) {
+                                       *     // SSE frames are &quot;event: audio\ndata: {json}&quot; or just &quot;data: {json}&quot;.
+                                       *     // We only care about the data line — pull it out and parse.
+                                       *     const dataLine = ev.split(&quot;\n&quot;).find((l) =&gt; l.startsWith(&quot;data:&quot;));
+                                       *     if (!dataLine) continue;
+                                       *     const payload = JSON.parse(dataLine.slice(5).trim());
+                                       *     if (payload.done) { finished = true; break; }
+                                       *     if (payload.audio) {
+                                       *       const pcm = Buffer.from(payload.audio, &quot;base64&quot;);
+                                       *       // … hand pcm to your audio pipeline
+                                       *     }
+                                       *   }
+                                       * }
+                                       * </code></pre>
                                        * <h2>Common gotchas</h2>
                                        * <ul>
                                        * <li><strong>Use a streaming-friendly client.</strong> <code>curl -N</code>, Python <code>iter_lines</code>, or a <code>fetch</code> <code>ReadableStream</code> reader. Buffering clients will hide the latency win.</li>
                                        * <li><strong>Audio is base64 inside the event payload</strong>, not the raw event bytes. Decode the <code>data.audio</code> field per event.</li>
                                        * <li><strong><code>output_format=pcm</code></strong> gives the lowest overhead for streaming playback. <code>wav</code>/<code>mp3</code> work but add per-chunk framing bytes.</li>
+                                       * <li><strong>First-chunk latency</strong> depends on model warm-up + network distance. Use <code>output_format=pcm</code> and a streaming-friendly client to minimize what you can control.</li>
+                                       * <li><strong>JavaScript / TypeScript</strong>: the official <code>smallestai</code> npm package predates Lightning v3.1, so call this endpoint with <code>fetch</code> as shown above.</li>
                                        * </ul>
                                        */
-                                      public SmallestAIHttpResponse<Iterable<String>> synthesizeSseTts(
-                                          TtsRequest request, RequestOptions requestOptions) {
+                                      public SmallestAIHttpResponse<Iterable<Object>> synthesizeSseLightningV31(
+                                          LightningV31Request request,
+                                          RequestOptions requestOptions) {
                                         HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getWavesURL()).newBuilder()
 
-                                          .addPathSegments("waves/v1/tts/live");if (requestOptions != null) {
+                                          .addPathSegments("waves/v1/lightning-v3.1/stream");if (requestOptions != null) {
                                             requestOptions.getQueryParameters().forEach((_key, _value) -> {
                                               httpUrl.addQueryParameter(_key, _value);
                                             } );
@@ -1565,7 +1866,7 @@ public class RawWavesClient {
                                             Response response = client.newCall(okhttpRequest).execute();
                                             ResponseBody responseBody = response.body();
                                             if (response.isSuccessful()) {
-                                              return new SmallestAIHttpResponse<>(Stream.fromSse(String.class, new ResponseBodyReader(response)), response);
+                                              return new SmallestAIHttpResponse<>(Stream.fromSse(Object.class, new ResponseBodyReader(response)), response);
                                             }
                                             String responseBodyString = responseBody != null ? responseBody.string() : "{}";
                                             try {
@@ -1590,190 +1891,327 @@ public class RawWavesClient {
                                         }
 
                                         /**
-                                         * &lt;Warning&gt;<strong>Endpoint scheduled for retirement.</strong> This URL will stop accepting requests <strong>60 days from the Lightning v3.1 Pro launch (2026-05-15)</strong> — i.e. on <strong>2026-07-14</strong>. The Lightning v3.1 model itself is current and stays. Migrate to <a href="/waves/api-reference/api-reference/text-to-speech/synthesize-speech"><code>POST /waves/v1/tts</code></a> and select Lightning v3.1 via the <code>model</code> body field (default).&lt;/Warning&gt;
-                                         * <p>Synthesize speech from text in a single request. The simplest way to get audio when you have the full text up front — pass <code>text</code> + <code>voice_id</code>, get back binary audio.</p>
+                                         * Transcribe an audio file to text using the Pulse model. The fastest way to get a transcript when you already have a recording — pass either the raw bytes or a URL.
                                          * <h2>When to use this</h2>
-                                         * <ul>
-                                         * <li><strong>Use this</strong> for short utterances you can render before playback (notifications, prompts, batch jobs, audio file generation).</li>
-                                         * <li><strong>Use the SSE streaming endpoint</strong> when you want playback to start before the full audio is ready (long passages, latency-sensitive apps).</li>
-                                         * <li><strong>Use the WebSocket endpoint</strong> when text arrives incrementally (LLM token streams, live captioning).</li>
-                                         * </ul>
-                                         * <h2>Key features</h2>
-                                         * <ul>
-                                         * <li>44 kHz natural, expressive synthesis</li>
-                                         * <li>Cloned voice IDs (<code>voice_*</code>) work — same param as catalog voices</li>
-                                         * <li>12 documented languages — see the model card for the full list</li>
-                                         * <li>Output formats: <code>pcm</code>, <code>mp3</code>, <code>wav</code>, <code>ulaw</code>, <code>alaw</code></li>
-                                         * <li>Sample rates: 8 kHz – 44.1 kHz</li>
-                                         * <li>Speed: 0.5× – 2×</li>
-                                         * <li>Per-call pronunciation dictionaries via <code>pronunciation_dicts</code></li>
-                                         * </ul>
+                                         * <p>Use this endpoint when you have a complete audio file (call recording, voicemail, podcast episode) and want the transcript back in one response. For live transcription as audio arrives, use the realtime WebSocket endpoint (<code>WSS /waves/v1/pulse/get_text</code>) instead.</p>
+                                         * <h2>Input methods</h2>
+                                         * <p>Send the audio in one of two ways:</p>
+                                         * <ol>
+                                         * <li><strong>Raw bytes</strong> — <code>Content-Type: application/octet-stream</code> with the audio in the body. All knobs (<code>language</code>, <code>word_timestamps</code>, etc.) are query parameters.</li>
+                                         * <li><strong>URL</strong> — <code>Content-Type: application/json</code> with <code>{&quot;url&quot;: &quot;...&quot;}</code> in the body. Useful when the audio already lives in object storage. Same query parameters apply.</li>
+                                         * </ol>
+                                         * <p>Pulse autodetects the language across 30+ supported locales. Pass <code>language</code> explicitly when you already know it — detection is fast but skipping it is faster.</p>
                                          * <h2>Examples</h2>
-                                         * <p><strong>cURL</strong></p>
-                                         * <pre><code class="language-bash">curl -X POST &quot;https://api.smallest.ai/waves/v1/lightning-v3.1/get_speech&quot; \
+                                         * <p><strong>cURL</strong> (raw bytes)</p>
+                                         * <pre><code class="language-bash">curl -X POST &quot;https://api.smallest.ai/waves/v1/pulse/get_text?language=en&amp;word_timestamps=true&quot; \
+                                         *   -H &quot;Authorization: Bearer $SMALLEST_API_KEY&quot; \
+                                         *   -H &quot;Content-Type: application/octet-stream&quot; \
+                                         *   --data-binary &quot;@./call.wav&quot;
+                                         * </code></pre>
+                                         * <p><strong>cURL</strong> (URL)</p>
+                                         * <pre><code class="language-bash">curl -X POST &quot;https://api.smallest.ai/waves/v1/pulse/get_text?language=en&quot; \
                                          *   -H &quot;Authorization: Bearer $SMALLEST_API_KEY&quot; \
                                          *   -H &quot;Content-Type: application/json&quot; \
-                                         *   -H &quot;Accept: audio/wav&quot; \
-                                         *   -d '{
-                                         *     &quot;text&quot;: &quot;Hello from Lightning v3.1.&quot;,
-                                         *     &quot;voice_id&quot;: &quot;magnus&quot;,
-                                         *     &quot;sample_rate&quot;: 24000,
-                                         *     &quot;output_format&quot;: &quot;wav&quot;
-                                         *   }' --output speech.wav
+                                         *   -d '{&quot;url&quot;: &quot;https://your-bucket.s3.amazonaws.com/call.wav&quot;}'
                                          * </code></pre>
                                          * <p><strong>Python</strong> (<code>pip install smallestai&gt;=4.4.0</code>)</p>
                                          * <pre><code class="language-python">from smallestai import SmallestAI
                                          *
                                          * client = SmallestAI(api_key=&quot;YOUR_API_KEY&quot;)
-                                         *
-                                         * with open(&quot;speech.wav&quot;, &quot;wb&quot;) as f:
-                                         *     for chunk in client.waves.synthesize_lightning_v3_1(
-                                         *         text=&quot;Hello from Lightning v3.1.&quot;,
-                                         *         voice_id=&quot;magnus&quot;,
-                                         *         sample_rate=24000,
-                                         *         output_format=&quot;wav&quot;,
-                                         *         # Optional: cloned voice support
-                                         *         # voice_id=&quot;voice_FlPKRWI7DX&quot;,
-                                         *         # Optional: pin pronunciations for specific words
-                                         *         # pronunciation_dicts=[&quot;&lt;your dict id&gt;&quot;],
-                                         *     ):
-                                         *         f.write(chunk)
+                                         * with open(&quot;./call.wav&quot;, &quot;rb&quot;) as f:
+                                         *     result = client.waves.transcribe_pulse(
+                                         *         request=f.read(),
+                                         *         language=&quot;en&quot;,
+                                         *         word_timestamps=True,
+                                         *         diarize=True,
+                                         *     )
+                                         * print(result.status)         # &quot;success&quot;
+                                         * print(result.transcription)  # the transcript string
                                          * </code></pre>
                                          * <p><strong>JavaScript / TypeScript</strong> (using <code>fetch</code>)</p>
-                                         * <pre><code class="language-typescript">const res = await fetch(&quot;https://api.smallest.ai/waves/v1/lightning-v3.1/get_speech&quot;, {
+                                         * <pre><code class="language-typescript">import { readFileSync } from &quot;node:fs&quot;;
+                                         *
+                                         * const audio = readFileSync(&quot;./call.wav&quot;);
+                                         * const params = new URLSearchParams({ language: &quot;en&quot;, word_timestamps: &quot;true&quot;, diarize: &quot;true&quot; });
+                                         *
+                                         * const res = await fetch(`https://api.smallest.ai/waves/v1/pulse/get_text?${params}`, {
                                          *   method: &quot;POST&quot;,
                                          *   headers: {
                                          *     Authorization: `Bearer ${process.env.SMALLEST_API_KEY}`,
-                                         *     &quot;Content-Type&quot;: &quot;application/json&quot;,
-                                         *     Accept: &quot;audio/wav&quot;,
+                                         *     &quot;Content-Type&quot;: &quot;application/octet-stream&quot;,
                                          *   },
-                                         *   body: JSON.stringify({
-                                         *     text: &quot;Hello from Lightning v3.1.&quot;,
-                                         *     voice_id: &quot;magnus&quot;,
-                                         *     sample_rate: 24000,
-                                         *     output_format: &quot;wav&quot;,
-                                         *   }),
+                                         *   body: audio,
                                          * });
-                                         * const audio = Buffer.from(await res.arrayBuffer());
-                                         * require(&quot;node:fs&quot;).writeFileSync(&quot;speech.wav&quot;, audio);
+                                         * const result = await res.json();
+                                         * console.log(result.transcription);
                                          * </code></pre>
                                          * <h2>Common gotchas</h2>
                                          * <ul>
-                                         * <li><strong>Set <code>Accept: audio/wav</code>.</strong> Omitting it can return an empty or unplayable response.</li>
-                                         * <li><strong>Cloned voices</strong> (<code>voice_*</code> from <code>add_voice</code>) work on this endpoint and support <code>pronunciation_dicts</code>.</li>
-                                         * <li><strong><code>pronunciation_dicts</code> validates IDs at request time.</strong> Passing an unknown ID returns <code>Invalid input data</code> — create the dict first via the pronunciation-dicts endpoint and save the returned <code>id</code>.</li>
-                                         * <li><strong>Pronunciation matching is case-sensitive.</strong> Add both <code>Synopsis</code> and <code>synopsis</code> if your text uses both casings.</li>
-                                         * <li><strong>44.1 kHz output</strong> is supported but most playback environments are happy with 24 kHz — drop the sample rate if bandwidth matters.</li>
-                                         * <li><strong>JavaScript / TypeScript</strong>: the official <code>smallestai</code> npm package predates Lightning v3.1, so call this endpoint with <code>fetch</code> or <code>axios</code> as shown above.</li>
+                                         * <li><strong>Max file size is 250 MB.</strong> Larger files return HTTP <code>400</code> with <code>{errors: &quot;Audio data too large&quot;, status: &quot;error&quot;, message: &quot;Error handling audio data&quot;}</code>. Compress to mono 16 kHz PCM if you're close to the limit; quality is unaffected.</li>
+                                         * <li><strong>Formatting flags (<code>format</code>, <code>punctuate</code>, <code>capitalize</code>)</strong> are accepted at the wire level and exposed in the Python SDK as of <code>smallestai&gt;=4.4.0</code>. Today they currently return the same transcript regardless of value — pass them in your integration so it works as the behavior changes.</li>
+                                         * <li><strong>Webhook-driven flow</strong>: pass <code>webhook_url</code> to receive the transcript asynchronously. The endpoint returns immediately; the transcript hits your webhook when ready. Useful for long files where you don't want to hold an HTTP connection open.</li>
+                                         * <li><strong>Speaker diarization</strong> (<code>diarize=true</code>) adds latency. Skip it if you only need the words.</li>
+                                         * <li><strong>JavaScript / TypeScript</strong>: the official <code>smallestai</code> npm package predates the Pulse model, so call this endpoint with <code>fetch</code> or <code>axios</code> as shown above.</li>
                                          * </ul>
                                          */
-                                        public SmallestAIHttpResponse<InputStream> synthesizeLightningV31(
-                                            LightningV31Request request) {
-                                          return synthesizeLightningV31(request,null);
+                                        public SmallestAIHttpResponse<TranscribePulseWavesResponse> transcribePulse(
+                                            byte[] body) {
+                                          return transcribePulse(TranscribePulseWavesRequest.builder().body(body).build());
                                         }
 
                                         /**
-                                         * &lt;Warning&gt;<strong>Endpoint scheduled for retirement.</strong> This URL will stop accepting requests <strong>60 days from the Lightning v3.1 Pro launch (2026-05-15)</strong> — i.e. on <strong>2026-07-14</strong>. The Lightning v3.1 model itself is current and stays. Migrate to <a href="/waves/api-reference/api-reference/text-to-speech/synthesize-speech"><code>POST /waves/v1/tts</code></a> and select Lightning v3.1 via the <code>model</code> body field (default).&lt;/Warning&gt;
-                                         * <p>Synthesize speech from text in a single request. The simplest way to get audio when you have the full text up front — pass <code>text</code> + <code>voice_id</code>, get back binary audio.</p>
+                                         * Transcribe an audio file to text using the Pulse model. The fastest way to get a transcript when you already have a recording — pass either the raw bytes or a URL.
                                          * <h2>When to use this</h2>
-                                         * <ul>
-                                         * <li><strong>Use this</strong> for short utterances you can render before playback (notifications, prompts, batch jobs, audio file generation).</li>
-                                         * <li><strong>Use the SSE streaming endpoint</strong> when you want playback to start before the full audio is ready (long passages, latency-sensitive apps).</li>
-                                         * <li><strong>Use the WebSocket endpoint</strong> when text arrives incrementally (LLM token streams, live captioning).</li>
-                                         * </ul>
-                                         * <h2>Key features</h2>
-                                         * <ul>
-                                         * <li>44 kHz natural, expressive synthesis</li>
-                                         * <li>Cloned voice IDs (<code>voice_*</code>) work — same param as catalog voices</li>
-                                         * <li>12 documented languages — see the model card for the full list</li>
-                                         * <li>Output formats: <code>pcm</code>, <code>mp3</code>, <code>wav</code>, <code>ulaw</code>, <code>alaw</code></li>
-                                         * <li>Sample rates: 8 kHz – 44.1 kHz</li>
-                                         * <li>Speed: 0.5× – 2×</li>
-                                         * <li>Per-call pronunciation dictionaries via <code>pronunciation_dicts</code></li>
-                                         * </ul>
+                                         * <p>Use this endpoint when you have a complete audio file (call recording, voicemail, podcast episode) and want the transcript back in one response. For live transcription as audio arrives, use the realtime WebSocket endpoint (<code>WSS /waves/v1/pulse/get_text</code>) instead.</p>
+                                         * <h2>Input methods</h2>
+                                         * <p>Send the audio in one of two ways:</p>
+                                         * <ol>
+                                         * <li><strong>Raw bytes</strong> — <code>Content-Type: application/octet-stream</code> with the audio in the body. All knobs (<code>language</code>, <code>word_timestamps</code>, etc.) are query parameters.</li>
+                                         * <li><strong>URL</strong> — <code>Content-Type: application/json</code> with <code>{&quot;url&quot;: &quot;...&quot;}</code> in the body. Useful when the audio already lives in object storage. Same query parameters apply.</li>
+                                         * </ol>
+                                         * <p>Pulse autodetects the language across 30+ supported locales. Pass <code>language</code> explicitly when you already know it — detection is fast but skipping it is faster.</p>
                                          * <h2>Examples</h2>
-                                         * <p><strong>cURL</strong></p>
-                                         * <pre><code class="language-bash">curl -X POST &quot;https://api.smallest.ai/waves/v1/lightning-v3.1/get_speech&quot; \
+                                         * <p><strong>cURL</strong> (raw bytes)</p>
+                                         * <pre><code class="language-bash">curl -X POST &quot;https://api.smallest.ai/waves/v1/pulse/get_text?language=en&amp;word_timestamps=true&quot; \
+                                         *   -H &quot;Authorization: Bearer $SMALLEST_API_KEY&quot; \
+                                         *   -H &quot;Content-Type: application/octet-stream&quot; \
+                                         *   --data-binary &quot;@./call.wav&quot;
+                                         * </code></pre>
+                                         * <p><strong>cURL</strong> (URL)</p>
+                                         * <pre><code class="language-bash">curl -X POST &quot;https://api.smallest.ai/waves/v1/pulse/get_text?language=en&quot; \
                                          *   -H &quot;Authorization: Bearer $SMALLEST_API_KEY&quot; \
                                          *   -H &quot;Content-Type: application/json&quot; \
-                                         *   -H &quot;Accept: audio/wav&quot; \
-                                         *   -d '{
-                                         *     &quot;text&quot;: &quot;Hello from Lightning v3.1.&quot;,
-                                         *     &quot;voice_id&quot;: &quot;magnus&quot;,
-                                         *     &quot;sample_rate&quot;: 24000,
-                                         *     &quot;output_format&quot;: &quot;wav&quot;
-                                         *   }' --output speech.wav
+                                         *   -d '{&quot;url&quot;: &quot;https://your-bucket.s3.amazonaws.com/call.wav&quot;}'
                                          * </code></pre>
                                          * <p><strong>Python</strong> (<code>pip install smallestai&gt;=4.4.0</code>)</p>
                                          * <pre><code class="language-python">from smallestai import SmallestAI
                                          *
                                          * client = SmallestAI(api_key=&quot;YOUR_API_KEY&quot;)
-                                         *
-                                         * with open(&quot;speech.wav&quot;, &quot;wb&quot;) as f:
-                                         *     for chunk in client.waves.synthesize_lightning_v3_1(
-                                         *         text=&quot;Hello from Lightning v3.1.&quot;,
-                                         *         voice_id=&quot;magnus&quot;,
-                                         *         sample_rate=24000,
-                                         *         output_format=&quot;wav&quot;,
-                                         *         # Optional: cloned voice support
-                                         *         # voice_id=&quot;voice_FlPKRWI7DX&quot;,
-                                         *         # Optional: pin pronunciations for specific words
-                                         *         # pronunciation_dicts=[&quot;&lt;your dict id&gt;&quot;],
-                                         *     ):
-                                         *         f.write(chunk)
+                                         * with open(&quot;./call.wav&quot;, &quot;rb&quot;) as f:
+                                         *     result = client.waves.transcribe_pulse(
+                                         *         request=f.read(),
+                                         *         language=&quot;en&quot;,
+                                         *         word_timestamps=True,
+                                         *         diarize=True,
+                                         *     )
+                                         * print(result.status)         # &quot;success&quot;
+                                         * print(result.transcription)  # the transcript string
                                          * </code></pre>
                                          * <p><strong>JavaScript / TypeScript</strong> (using <code>fetch</code>)</p>
-                                         * <pre><code class="language-typescript">const res = await fetch(&quot;https://api.smallest.ai/waves/v1/lightning-v3.1/get_speech&quot;, {
+                                         * <pre><code class="language-typescript">import { readFileSync } from &quot;node:fs&quot;;
+                                         *
+                                         * const audio = readFileSync(&quot;./call.wav&quot;);
+                                         * const params = new URLSearchParams({ language: &quot;en&quot;, word_timestamps: &quot;true&quot;, diarize: &quot;true&quot; });
+                                         *
+                                         * const res = await fetch(`https://api.smallest.ai/waves/v1/pulse/get_text?${params}`, {
                                          *   method: &quot;POST&quot;,
                                          *   headers: {
                                          *     Authorization: `Bearer ${process.env.SMALLEST_API_KEY}`,
-                                         *     &quot;Content-Type&quot;: &quot;application/json&quot;,
-                                         *     Accept: &quot;audio/wav&quot;,
+                                         *     &quot;Content-Type&quot;: &quot;application/octet-stream&quot;,
                                          *   },
-                                         *   body: JSON.stringify({
-                                         *     text: &quot;Hello from Lightning v3.1.&quot;,
-                                         *     voice_id: &quot;magnus&quot;,
-                                         *     sample_rate: 24000,
-                                         *     output_format: &quot;wav&quot;,
-                                         *   }),
+                                         *   body: audio,
                                          * });
-                                         * const audio = Buffer.from(await res.arrayBuffer());
-                                         * require(&quot;node:fs&quot;).writeFileSync(&quot;speech.wav&quot;, audio);
+                                         * const result = await res.json();
+                                         * console.log(result.transcription);
                                          * </code></pre>
                                          * <h2>Common gotchas</h2>
                                          * <ul>
-                                         * <li><strong>Set <code>Accept: audio/wav</code>.</strong> Omitting it can return an empty or unplayable response.</li>
-                                         * <li><strong>Cloned voices</strong> (<code>voice_*</code> from <code>add_voice</code>) work on this endpoint and support <code>pronunciation_dicts</code>.</li>
-                                         * <li><strong><code>pronunciation_dicts</code> validates IDs at request time.</strong> Passing an unknown ID returns <code>Invalid input data</code> — create the dict first via the pronunciation-dicts endpoint and save the returned <code>id</code>.</li>
-                                         * <li><strong>Pronunciation matching is case-sensitive.</strong> Add both <code>Synopsis</code> and <code>synopsis</code> if your text uses both casings.</li>
-                                         * <li><strong>44.1 kHz output</strong> is supported but most playback environments are happy with 24 kHz — drop the sample rate if bandwidth matters.</li>
-                                         * <li><strong>JavaScript / TypeScript</strong>: the official <code>smallestai</code> npm package predates Lightning v3.1, so call this endpoint with <code>fetch</code> or <code>axios</code> as shown above.</li>
+                                         * <li><strong>Max file size is 250 MB.</strong> Larger files return HTTP <code>400</code> with <code>{errors: &quot;Audio data too large&quot;, status: &quot;error&quot;, message: &quot;Error handling audio data&quot;}</code>. Compress to mono 16 kHz PCM if you're close to the limit; quality is unaffected.</li>
+                                         * <li><strong>Formatting flags (<code>format</code>, <code>punctuate</code>, <code>capitalize</code>)</strong> are accepted at the wire level and exposed in the Python SDK as of <code>smallestai&gt;=4.4.0</code>. Today they currently return the same transcript regardless of value — pass them in your integration so it works as the behavior changes.</li>
+                                         * <li><strong>Webhook-driven flow</strong>: pass <code>webhook_url</code> to receive the transcript asynchronously. The endpoint returns immediately; the transcript hits your webhook when ready. Useful for long files where you don't want to hold an HTTP connection open.</li>
+                                         * <li><strong>Speaker diarization</strong> (<code>diarize=true</code>) adds latency. Skip it if you only need the words.</li>
+                                         * <li><strong>JavaScript / TypeScript</strong>: the official <code>smallestai</code> npm package predates the Pulse model, so call this endpoint with <code>fetch</code> or <code>axios</code> as shown above.</li>
                                          * </ul>
                                          */
-                                        public SmallestAIHttpResponse<InputStream> synthesizeLightningV31(
-                                            LightningV31Request request,
+                                        public SmallestAIHttpResponse<TranscribePulseWavesResponse> transcribePulse(
+                                            byte[] body, RequestOptions requestOptions) {
+                                          return transcribePulse(TranscribePulseWavesRequest.builder().body(body).build(), requestOptions);
+                                        }
+
+                                        /**
+                                         * Transcribe an audio file to text using the Pulse model. The fastest way to get a transcript when you already have a recording — pass either the raw bytes or a URL.
+                                         * <h2>When to use this</h2>
+                                         * <p>Use this endpoint when you have a complete audio file (call recording, voicemail, podcast episode) and want the transcript back in one response. For live transcription as audio arrives, use the realtime WebSocket endpoint (<code>WSS /waves/v1/pulse/get_text</code>) instead.</p>
+                                         * <h2>Input methods</h2>
+                                         * <p>Send the audio in one of two ways:</p>
+                                         * <ol>
+                                         * <li><strong>Raw bytes</strong> — <code>Content-Type: application/octet-stream</code> with the audio in the body. All knobs (<code>language</code>, <code>word_timestamps</code>, etc.) are query parameters.</li>
+                                         * <li><strong>URL</strong> — <code>Content-Type: application/json</code> with <code>{&quot;url&quot;: &quot;...&quot;}</code> in the body. Useful when the audio already lives in object storage. Same query parameters apply.</li>
+                                         * </ol>
+                                         * <p>Pulse autodetects the language across 30+ supported locales. Pass <code>language</code> explicitly when you already know it — detection is fast but skipping it is faster.</p>
+                                         * <h2>Examples</h2>
+                                         * <p><strong>cURL</strong> (raw bytes)</p>
+                                         * <pre><code class="language-bash">curl -X POST &quot;https://api.smallest.ai/waves/v1/pulse/get_text?language=en&amp;word_timestamps=true&quot; \
+                                         *   -H &quot;Authorization: Bearer $SMALLEST_API_KEY&quot; \
+                                         *   -H &quot;Content-Type: application/octet-stream&quot; \
+                                         *   --data-binary &quot;@./call.wav&quot;
+                                         * </code></pre>
+                                         * <p><strong>cURL</strong> (URL)</p>
+                                         * <pre><code class="language-bash">curl -X POST &quot;https://api.smallest.ai/waves/v1/pulse/get_text?language=en&quot; \
+                                         *   -H &quot;Authorization: Bearer $SMALLEST_API_KEY&quot; \
+                                         *   -H &quot;Content-Type: application/json&quot; \
+                                         *   -d '{&quot;url&quot;: &quot;https://your-bucket.s3.amazonaws.com/call.wav&quot;}'
+                                         * </code></pre>
+                                         * <p><strong>Python</strong> (<code>pip install smallestai&gt;=4.4.0</code>)</p>
+                                         * <pre><code class="language-python">from smallestai import SmallestAI
+                                         *
+                                         * client = SmallestAI(api_key=&quot;YOUR_API_KEY&quot;)
+                                         * with open(&quot;./call.wav&quot;, &quot;rb&quot;) as f:
+                                         *     result = client.waves.transcribe_pulse(
+                                         *         request=f.read(),
+                                         *         language=&quot;en&quot;,
+                                         *         word_timestamps=True,
+                                         *         diarize=True,
+                                         *     )
+                                         * print(result.status)         # &quot;success&quot;
+                                         * print(result.transcription)  # the transcript string
+                                         * </code></pre>
+                                         * <p><strong>JavaScript / TypeScript</strong> (using <code>fetch</code>)</p>
+                                         * <pre><code class="language-typescript">import { readFileSync } from &quot;node:fs&quot;;
+                                         *
+                                         * const audio = readFileSync(&quot;./call.wav&quot;);
+                                         * const params = new URLSearchParams({ language: &quot;en&quot;, word_timestamps: &quot;true&quot;, diarize: &quot;true&quot; });
+                                         *
+                                         * const res = await fetch(`https://api.smallest.ai/waves/v1/pulse/get_text?${params}`, {
+                                         *   method: &quot;POST&quot;,
+                                         *   headers: {
+                                         *     Authorization: `Bearer ${process.env.SMALLEST_API_KEY}`,
+                                         *     &quot;Content-Type&quot;: &quot;application/octet-stream&quot;,
+                                         *   },
+                                         *   body: audio,
+                                         * });
+                                         * const result = await res.json();
+                                         * console.log(result.transcription);
+                                         * </code></pre>
+                                         * <h2>Common gotchas</h2>
+                                         * <ul>
+                                         * <li><strong>Max file size is 250 MB.</strong> Larger files return HTTP <code>400</code> with <code>{errors: &quot;Audio data too large&quot;, status: &quot;error&quot;, message: &quot;Error handling audio data&quot;}</code>. Compress to mono 16 kHz PCM if you're close to the limit; quality is unaffected.</li>
+                                         * <li><strong>Formatting flags (<code>format</code>, <code>punctuate</code>, <code>capitalize</code>)</strong> are accepted at the wire level and exposed in the Python SDK as of <code>smallestai&gt;=4.4.0</code>. Today they currently return the same transcript regardless of value — pass them in your integration so it works as the behavior changes.</li>
+                                         * <li><strong>Webhook-driven flow</strong>: pass <code>webhook_url</code> to receive the transcript asynchronously. The endpoint returns immediately; the transcript hits your webhook when ready. Useful for long files where you don't want to hold an HTTP connection open.</li>
+                                         * <li><strong>Speaker diarization</strong> (<code>diarize=true</code>) adds latency. Skip it if you only need the words.</li>
+                                         * <li><strong>JavaScript / TypeScript</strong>: the official <code>smallestai</code> npm package predates the Pulse model, so call this endpoint with <code>fetch</code> or <code>axios</code> as shown above.</li>
+                                         * </ul>
+                                         */
+                                        public SmallestAIHttpResponse<TranscribePulseWavesResponse> transcribePulse(
+                                            TranscribePulseWavesRequest request) {
+                                          return transcribePulse(request,null);
+                                        }
+
+                                        /**
+                                         * Transcribe an audio file to text using the Pulse model. The fastest way to get a transcript when you already have a recording — pass either the raw bytes or a URL.
+                                         * <h2>When to use this</h2>
+                                         * <p>Use this endpoint when you have a complete audio file (call recording, voicemail, podcast episode) and want the transcript back in one response. For live transcription as audio arrives, use the realtime WebSocket endpoint (<code>WSS /waves/v1/pulse/get_text</code>) instead.</p>
+                                         * <h2>Input methods</h2>
+                                         * <p>Send the audio in one of two ways:</p>
+                                         * <ol>
+                                         * <li><strong>Raw bytes</strong> — <code>Content-Type: application/octet-stream</code> with the audio in the body. All knobs (<code>language</code>, <code>word_timestamps</code>, etc.) are query parameters.</li>
+                                         * <li><strong>URL</strong> — <code>Content-Type: application/json</code> with <code>{&quot;url&quot;: &quot;...&quot;}</code> in the body. Useful when the audio already lives in object storage. Same query parameters apply.</li>
+                                         * </ol>
+                                         * <p>Pulse autodetects the language across 30+ supported locales. Pass <code>language</code> explicitly when you already know it — detection is fast but skipping it is faster.</p>
+                                         * <h2>Examples</h2>
+                                         * <p><strong>cURL</strong> (raw bytes)</p>
+                                         * <pre><code class="language-bash">curl -X POST &quot;https://api.smallest.ai/waves/v1/pulse/get_text?language=en&amp;word_timestamps=true&quot; \
+                                         *   -H &quot;Authorization: Bearer $SMALLEST_API_KEY&quot; \
+                                         *   -H &quot;Content-Type: application/octet-stream&quot; \
+                                         *   --data-binary &quot;@./call.wav&quot;
+                                         * </code></pre>
+                                         * <p><strong>cURL</strong> (URL)</p>
+                                         * <pre><code class="language-bash">curl -X POST &quot;https://api.smallest.ai/waves/v1/pulse/get_text?language=en&quot; \
+                                         *   -H &quot;Authorization: Bearer $SMALLEST_API_KEY&quot; \
+                                         *   -H &quot;Content-Type: application/json&quot; \
+                                         *   -d '{&quot;url&quot;: &quot;https://your-bucket.s3.amazonaws.com/call.wav&quot;}'
+                                         * </code></pre>
+                                         * <p><strong>Python</strong> (<code>pip install smallestai&gt;=4.4.0</code>)</p>
+                                         * <pre><code class="language-python">from smallestai import SmallestAI
+                                         *
+                                         * client = SmallestAI(api_key=&quot;YOUR_API_KEY&quot;)
+                                         * with open(&quot;./call.wav&quot;, &quot;rb&quot;) as f:
+                                         *     result = client.waves.transcribe_pulse(
+                                         *         request=f.read(),
+                                         *         language=&quot;en&quot;,
+                                         *         word_timestamps=True,
+                                         *         diarize=True,
+                                         *     )
+                                         * print(result.status)         # &quot;success&quot;
+                                         * print(result.transcription)  # the transcript string
+                                         * </code></pre>
+                                         * <p><strong>JavaScript / TypeScript</strong> (using <code>fetch</code>)</p>
+                                         * <pre><code class="language-typescript">import { readFileSync } from &quot;node:fs&quot;;
+                                         *
+                                         * const audio = readFileSync(&quot;./call.wav&quot;);
+                                         * const params = new URLSearchParams({ language: &quot;en&quot;, word_timestamps: &quot;true&quot;, diarize: &quot;true&quot; });
+                                         *
+                                         * const res = await fetch(`https://api.smallest.ai/waves/v1/pulse/get_text?${params}`, {
+                                         *   method: &quot;POST&quot;,
+                                         *   headers: {
+                                         *     Authorization: `Bearer ${process.env.SMALLEST_API_KEY}`,
+                                         *     &quot;Content-Type&quot;: &quot;application/octet-stream&quot;,
+                                         *   },
+                                         *   body: audio,
+                                         * });
+                                         * const result = await res.json();
+                                         * console.log(result.transcription);
+                                         * </code></pre>
+                                         * <h2>Common gotchas</h2>
+                                         * <ul>
+                                         * <li><strong>Max file size is 250 MB.</strong> Larger files return HTTP <code>400</code> with <code>{errors: &quot;Audio data too large&quot;, status: &quot;error&quot;, message: &quot;Error handling audio data&quot;}</code>. Compress to mono 16 kHz PCM if you're close to the limit; quality is unaffected.</li>
+                                         * <li><strong>Formatting flags (<code>format</code>, <code>punctuate</code>, <code>capitalize</code>)</strong> are accepted at the wire level and exposed in the Python SDK as of <code>smallestai&gt;=4.4.0</code>. Today they currently return the same transcript regardless of value — pass them in your integration so it works as the behavior changes.</li>
+                                         * <li><strong>Webhook-driven flow</strong>: pass <code>webhook_url</code> to receive the transcript asynchronously. The endpoint returns immediately; the transcript hits your webhook when ready. Useful for long files where you don't want to hold an HTTP connection open.</li>
+                                         * <li><strong>Speaker diarization</strong> (<code>diarize=true</code>) adds latency. Skip it if you only need the words.</li>
+                                         * <li><strong>JavaScript / TypeScript</strong>: the official <code>smallestai</code> npm package predates the Pulse model, so call this endpoint with <code>fetch</code> or <code>axios</code> as shown above.</li>
+                                         * </ul>
+                                         */
+                                        public SmallestAIHttpResponse<TranscribePulseWavesResponse> transcribePulse(
+                                            TranscribePulseWavesRequest request,
                                             RequestOptions requestOptions) {
                                           HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getWavesURL()).newBuilder()
 
-                                            .addPathSegments("waves/v1/lightning-v3.1/get_speech");if (requestOptions != null) {
+                                            .addPathSegments("waves/v1/pulse/get_text");if (request.getLanguage().isPresent()) {
+                                              QueryStringMapper.addQueryParameter(httpUrl, "language", request.getLanguage().get(), false);
+                                            }
+                                            if (request.getEncoding().isPresent()) {
+                                              QueryStringMapper.addQueryParameter(httpUrl, "encoding", request.getEncoding().get(), false);
+                                            }
+                                            if (request.getWebhookUrl().isPresent()) {
+                                              QueryStringMapper.addQueryParameter(httpUrl, "webhook_url", request.getWebhookUrl().get(), false);
+                                            }
+                                            if (request.getWebhookExtra().isPresent()) {
+                                              QueryStringMapper.addQueryParameter(httpUrl, "webhook_extra", request.getWebhookExtra().get(), false);
+                                            }
+                                            if (request.getWordTimestamps().isPresent()) {
+                                              QueryStringMapper.addQueryParameter(httpUrl, "word_timestamps", request.getWordTimestamps().get(), false);
+                                            }
+                                            if (request.getDiarize().isPresent()) {
+                                              QueryStringMapper.addQueryParameter(httpUrl, "diarize", request.getDiarize().get(), false);
+                                            }
+                                            if (request.getGenderDetection().isPresent()) {
+                                              QueryStringMapper.addQueryParameter(httpUrl, "gender_detection", request.getGenderDetection().get(), false);
+                                            }
+                                            if (request.getEmotionDetection().isPresent()) {
+                                              QueryStringMapper.addQueryParameter(httpUrl, "emotion_detection", request.getEmotionDetection().get(), false);
+                                            }
+                                            if (request.getFormat().isPresent()) {
+                                              QueryStringMapper.addQueryParameter(httpUrl, "format", request.getFormat().get(), false);
+                                            }
+                                            if (request.getPunctuate().isPresent()) {
+                                              QueryStringMapper.addQueryParameter(httpUrl, "punctuate", request.getPunctuate().get(), false);
+                                            }
+                                            if (request.getCapitalize().isPresent()) {
+                                              QueryStringMapper.addQueryParameter(httpUrl, "capitalize", request.getCapitalize().get(), false);
+                                            }
+                                            if (requestOptions != null) {
                                               requestOptions.getQueryParameters().forEach((_key, _value) -> {
                                                 httpUrl.addQueryParameter(_key, _value);
                                               } );
                                             }
-                                            RequestBody body;
-                                            try {
-                                              body = RequestBody.create(ObjectMappers.JSON_MAPPER.writeValueAsBytes(request), MediaTypes.APPLICATION_JSON);
-                                            }
-                                            catch(JsonProcessingException e) {
-                                              throw new SmallestAIException("Failed to serialize request", e);
-                                            }
-                                            Request okhttpRequest = new Request.Builder()
+                                            RequestBody body = new InputStreamRequestBody(MediaType.parse("application/octet-stream"), new ByteArrayInputStream(request.getBody()));
+                                            Request.Builder _requestBuilder = new Request.Builder()
                                               .url(httpUrl.build())
                                               .method("POST", body)
                                               .headers(Headers.of(clientOptions.headers(requestOptions)))
-                                              .addHeader("Content-Type", "application/json")
-                                              .addHeader("Accept", "application/json")
-                                              .build();
+                                              .addHeader("Content-Type", "application/octet-stream")
+                                              .addHeader("Accept", "application/json");
+                                            Request okhttpRequest = _requestBuilder.build();
                                             OkHttpClient client = clientOptions.httpClient();
                                             if (requestOptions != null && requestOptions.getTimeout().isPresent()) {
                                               client = clientOptions.httpClientWithTimeout(requestOptions);
@@ -1781,13 +2219,12 @@ public class RawWavesClient {
                                             if (requestOptions != null && requestOptions.getMaxRetries().isPresent()) {
                                               okhttpRequest = okhttpRequest.newBuilder().tag(RetryInterceptor.MaxRetriesOverride.class, new RetryInterceptor.MaxRetriesOverride(requestOptions.getMaxRetries().get())).build();
                                             }
-                                            try {
-                                              Response response = client.newCall(okhttpRequest).execute();
+                                            try (Response response = client.newCall(okhttpRequest).execute()) {
                                               ResponseBody responseBody = response.body();
-                                              if (response.isSuccessful()) {
-                                                return new SmallestAIHttpResponse<>(new ResponseBodyInputStream(response), response);
-                                              }
                                               String responseBodyString = responseBody != null ? responseBody.string() : "{}";
+                                              if (response.isSuccessful()) {
+                                                return new SmallestAIHttpResponse<>(ObjectMappers.JSON_MAPPER.readValue(responseBodyString, TranscribePulseWavesResponse.class), response);
+                                              }
                                               try {
                                                 switch (response.code()) {
                                                   case 400:throw new BadRequestError(ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
@@ -1808,612 +2245,4 @@ public class RawWavesClient {
                                               throw new SmallestAIException("Network error executing HTTP request", e);
                                             }
                                           }
-
-                                          /**
-                                           * &lt;Warning&gt;<strong>Endpoint scheduled for retirement.</strong> This URL will stop accepting requests <strong>60 days from the Lightning v3.1 Pro launch (2026-05-15)</strong> — i.e. on <strong>2026-07-14</strong>. The Lightning v3.1 model itself is current and stays. Migrate to <a href="/waves/api-reference/api-reference/text-to-speech/synthesize-speech-sse"><code>POST /waves/v1/tts/live</code></a> and select Lightning v3.1 via the <code>model</code> body field (default).&lt;/Warning&gt;
-                                           * <p>Synthesize speech and stream the audio back over Server-Sent Events. The body and parameters are identical to the sync <code>/get_speech</code> endpoint — the difference is the response is a stream of base64-encoded PCM chunks instead of one binary blob.</p>
-                                           * <h2>When to use this</h2>
-                                           * <ul>
-                                           * <li><strong>Use this</strong> when you want playback to start before synthesis is complete — long passages, latency-sensitive UI, live narration.</li>
-                                           * <li><strong>Use sync <code>/get_speech</code></strong> when total latency doesn't matter and you'd rather get one buffer.</li>
-                                           * <li><strong>Use the WebSocket endpoint</strong> when the <em>text</em> arrives incrementally (LLM token stream). SSE assumes you have the full text up front.</li>
-                                           * </ul>
-                                           * <h2>How it works</h2>
-                                           * <ol>
-                                           * <li>POST your text + voice settings — same payload as <code>/get_speech</code>.</li>
-                                           * <li>The response is <code>Content-Type: text/event-stream</code>. Each chunk frame is <code>event: audio\n</code> followed by <code>data: {&quot;audio&quot;: &quot;&lt;base64-pcm&gt;&quot;}\n\n</code>.</li>
-                                           * <li>Decode each chunk's <code>audio</code> field with base64 and feed the PCM bytes to your audio pipeline (browser <code>MediaSource</code>, ffmpeg pipe, raw PCM player, etc.).</li>
-                                           * <li>A final <code>data: {&quot;done&quot;: true}\n\n</code> frame marks end of stream.</li>
-                                           * </ol>
-                                           * <h2>Examples</h2>
-                                           * <p><strong>cURL</strong></p>
-                                           * <pre><code class="language-bash">curl -N -X POST &quot;https://api.smallest.ai/waves/v1/lightning-v3.1/stream&quot; \
-                                           *   -H &quot;Authorization: Bearer $SMALLEST_API_KEY&quot; \
-                                           *   -H &quot;Content-Type: application/json&quot; \
-                                           *   -d '{
-                                           *     &quot;text&quot;: &quot;Streaming this paragraph chunk by chunk so playback can start sooner.&quot;,
-                                           *     &quot;voice_id&quot;: &quot;magnus&quot;,
-                                           *     &quot;sample_rate&quot;: 24000,
-                                           *     &quot;output_format&quot;: &quot;pcm&quot;
-                                           *   }'
-                                           * </code></pre>
-                                           * <p><strong>Python</strong> (<code>pip install smallestai&gt;=4.4.0</code>)</p>
-                                           * <pre><code class="language-python">import base64
-                                           * from smallestai import SmallestAI
-                                           *
-                                           * client = SmallestAI(api_key=&quot;YOUR_API_KEY&quot;)
-                                           *
-                                           * with open(&quot;stream.pcm&quot;, &quot;wb&quot;) as f:
-                                           *     for chunk in client.waves.synthesize_sse_lightning_v3_1(
-                                           *         text=&quot;Streaming this paragraph chunk by chunk so playback can start sooner.&quot;,
-                                           *         voice_id=&quot;magnus&quot;,
-                                           *         sample_rate=24000,
-                                           *         output_format=&quot;pcm&quot;,
-                                           *     ):
-                                           *         # Each chunk is `{&quot;audio&quot;: &quot;&lt;base64-encoded PCM&gt;&quot;}`.
-                                           *         # Decode and pipe to your audio pipeline.
-                                           *         if chunk.get(&quot;audio&quot;):
-                                           *             f.write(base64.b64decode(chunk[&quot;audio&quot;]))
-                                           * </code></pre>
-                                           * <p><strong>JavaScript / TypeScript</strong> (using <code>fetch</code> + a reader)</p>
-                                           * <pre><code class="language-typescript">const res = await fetch(&quot;https://api.smallest.ai/waves/v1/lightning-v3.1/stream&quot;, {
-                                           *   method: &quot;POST&quot;,
-                                           *   headers: {
-                                           *     Authorization: `Bearer ${process.env.SMALLEST_API_KEY}`,
-                                           *     &quot;Content-Type&quot;: &quot;application/json&quot;,
-                                           *   },
-                                           *   body: JSON.stringify({
-                                           *     text: &quot;Streaming this paragraph chunk by chunk so playback can start sooner.&quot;,
-                                           *     voice_id: &quot;magnus&quot;,
-                                           *     sample_rate: 24000,
-                                           *     output_format: &quot;pcm&quot;,
-                                           *   }),
-                                           * });
-                                           *
-                                           * const reader = res.body!.getReader();
-                                           * const decoder = new TextDecoder();
-                                           * let buf = &quot;&quot;;
-                                           * let finished = false;
-                                           * while (!finished) {
-                                           *   const { value, done } = await reader.read();
-                                           *   if (done) break;
-                                           *   buf += decoder.decode(value);
-                                           *   const events = buf.split(&quot;\n\n&quot;);
-                                           *   buf = events.pop() ?? &quot;&quot;;
-                                           *   for (const ev of events) {
-                                           *     // SSE frames are &quot;event: audio\ndata: {json}&quot; or just &quot;data: {json}&quot;.
-                                           *     // We only care about the data line — pull it out and parse.
-                                           *     const dataLine = ev.split(&quot;\n&quot;).find((l) =&gt; l.startsWith(&quot;data:&quot;));
-                                           *     if (!dataLine) continue;
-                                           *     const payload = JSON.parse(dataLine.slice(5).trim());
-                                           *     if (payload.done) { finished = true; break; }
-                                           *     if (payload.audio) {
-                                           *       const pcm = Buffer.from(payload.audio, &quot;base64&quot;);
-                                           *       // … hand pcm to your audio pipeline
-                                           *     }
-                                           *   }
-                                           * }
-                                           * </code></pre>
-                                           * <h2>Common gotchas</h2>
-                                           * <ul>
-                                           * <li><strong>Use a streaming-friendly client.</strong> <code>curl -N</code>, Python <code>iter_lines</code>, or a <code>fetch</code> <code>ReadableStream</code> reader. Buffering clients will hide the latency win.</li>
-                                           * <li><strong>Audio is base64 inside the event payload</strong>, not the raw event bytes. Decode the <code>data.audio</code> field per event.</li>
-                                           * <li><strong><code>output_format=pcm</code></strong> gives the lowest overhead for streaming playback. <code>wav</code>/<code>mp3</code> work but add per-chunk framing bytes.</li>
-                                           * <li><strong>First-chunk latency</strong> depends on model warm-up + network distance. Use <code>output_format=pcm</code> and a streaming-friendly client to minimize what you can control.</li>
-                                           * <li><strong>JavaScript / TypeScript</strong>: the official <code>smallestai</code> npm package predates Lightning v3.1, so call this endpoint with <code>fetch</code> as shown above.</li>
-                                           * </ul>
-                                           */
-                                          public SmallestAIHttpResponse<Iterable<Object>> synthesizeSseLightningV31(
-                                              LightningV31Request request) {
-                                            return synthesizeSseLightningV31(request,null);
-                                          }
-
-                                          /**
-                                           * &lt;Warning&gt;<strong>Endpoint scheduled for retirement.</strong> This URL will stop accepting requests <strong>60 days from the Lightning v3.1 Pro launch (2026-05-15)</strong> — i.e. on <strong>2026-07-14</strong>. The Lightning v3.1 model itself is current and stays. Migrate to <a href="/waves/api-reference/api-reference/text-to-speech/synthesize-speech-sse"><code>POST /waves/v1/tts/live</code></a> and select Lightning v3.1 via the <code>model</code> body field (default).&lt;/Warning&gt;
-                                           * <p>Synthesize speech and stream the audio back over Server-Sent Events. The body and parameters are identical to the sync <code>/get_speech</code> endpoint — the difference is the response is a stream of base64-encoded PCM chunks instead of one binary blob.</p>
-                                           * <h2>When to use this</h2>
-                                           * <ul>
-                                           * <li><strong>Use this</strong> when you want playback to start before synthesis is complete — long passages, latency-sensitive UI, live narration.</li>
-                                           * <li><strong>Use sync <code>/get_speech</code></strong> when total latency doesn't matter and you'd rather get one buffer.</li>
-                                           * <li><strong>Use the WebSocket endpoint</strong> when the <em>text</em> arrives incrementally (LLM token stream). SSE assumes you have the full text up front.</li>
-                                           * </ul>
-                                           * <h2>How it works</h2>
-                                           * <ol>
-                                           * <li>POST your text + voice settings — same payload as <code>/get_speech</code>.</li>
-                                           * <li>The response is <code>Content-Type: text/event-stream</code>. Each chunk frame is <code>event: audio\n</code> followed by <code>data: {&quot;audio&quot;: &quot;&lt;base64-pcm&gt;&quot;}\n\n</code>.</li>
-                                           * <li>Decode each chunk's <code>audio</code> field with base64 and feed the PCM bytes to your audio pipeline (browser <code>MediaSource</code>, ffmpeg pipe, raw PCM player, etc.).</li>
-                                           * <li>A final <code>data: {&quot;done&quot;: true}\n\n</code> frame marks end of stream.</li>
-                                           * </ol>
-                                           * <h2>Examples</h2>
-                                           * <p><strong>cURL</strong></p>
-                                           * <pre><code class="language-bash">curl -N -X POST &quot;https://api.smallest.ai/waves/v1/lightning-v3.1/stream&quot; \
-                                           *   -H &quot;Authorization: Bearer $SMALLEST_API_KEY&quot; \
-                                           *   -H &quot;Content-Type: application/json&quot; \
-                                           *   -d '{
-                                           *     &quot;text&quot;: &quot;Streaming this paragraph chunk by chunk so playback can start sooner.&quot;,
-                                           *     &quot;voice_id&quot;: &quot;magnus&quot;,
-                                           *     &quot;sample_rate&quot;: 24000,
-                                           *     &quot;output_format&quot;: &quot;pcm&quot;
-                                           *   }'
-                                           * </code></pre>
-                                           * <p><strong>Python</strong> (<code>pip install smallestai&gt;=4.4.0</code>)</p>
-                                           * <pre><code class="language-python">import base64
-                                           * from smallestai import SmallestAI
-                                           *
-                                           * client = SmallestAI(api_key=&quot;YOUR_API_KEY&quot;)
-                                           *
-                                           * with open(&quot;stream.pcm&quot;, &quot;wb&quot;) as f:
-                                           *     for chunk in client.waves.synthesize_sse_lightning_v3_1(
-                                           *         text=&quot;Streaming this paragraph chunk by chunk so playback can start sooner.&quot;,
-                                           *         voice_id=&quot;magnus&quot;,
-                                           *         sample_rate=24000,
-                                           *         output_format=&quot;pcm&quot;,
-                                           *     ):
-                                           *         # Each chunk is `{&quot;audio&quot;: &quot;&lt;base64-encoded PCM&gt;&quot;}`.
-                                           *         # Decode and pipe to your audio pipeline.
-                                           *         if chunk.get(&quot;audio&quot;):
-                                           *             f.write(base64.b64decode(chunk[&quot;audio&quot;]))
-                                           * </code></pre>
-                                           * <p><strong>JavaScript / TypeScript</strong> (using <code>fetch</code> + a reader)</p>
-                                           * <pre><code class="language-typescript">const res = await fetch(&quot;https://api.smallest.ai/waves/v1/lightning-v3.1/stream&quot;, {
-                                           *   method: &quot;POST&quot;,
-                                           *   headers: {
-                                           *     Authorization: `Bearer ${process.env.SMALLEST_API_KEY}`,
-                                           *     &quot;Content-Type&quot;: &quot;application/json&quot;,
-                                           *   },
-                                           *   body: JSON.stringify({
-                                           *     text: &quot;Streaming this paragraph chunk by chunk so playback can start sooner.&quot;,
-                                           *     voice_id: &quot;magnus&quot;,
-                                           *     sample_rate: 24000,
-                                           *     output_format: &quot;pcm&quot;,
-                                           *   }),
-                                           * });
-                                           *
-                                           * const reader = res.body!.getReader();
-                                           * const decoder = new TextDecoder();
-                                           * let buf = &quot;&quot;;
-                                           * let finished = false;
-                                           * while (!finished) {
-                                           *   const { value, done } = await reader.read();
-                                           *   if (done) break;
-                                           *   buf += decoder.decode(value);
-                                           *   const events = buf.split(&quot;\n\n&quot;);
-                                           *   buf = events.pop() ?? &quot;&quot;;
-                                           *   for (const ev of events) {
-                                           *     // SSE frames are &quot;event: audio\ndata: {json}&quot; or just &quot;data: {json}&quot;.
-                                           *     // We only care about the data line — pull it out and parse.
-                                           *     const dataLine = ev.split(&quot;\n&quot;).find((l) =&gt; l.startsWith(&quot;data:&quot;));
-                                           *     if (!dataLine) continue;
-                                           *     const payload = JSON.parse(dataLine.slice(5).trim());
-                                           *     if (payload.done) { finished = true; break; }
-                                           *     if (payload.audio) {
-                                           *       const pcm = Buffer.from(payload.audio, &quot;base64&quot;);
-                                           *       // … hand pcm to your audio pipeline
-                                           *     }
-                                           *   }
-                                           * }
-                                           * </code></pre>
-                                           * <h2>Common gotchas</h2>
-                                           * <ul>
-                                           * <li><strong>Use a streaming-friendly client.</strong> <code>curl -N</code>, Python <code>iter_lines</code>, or a <code>fetch</code> <code>ReadableStream</code> reader. Buffering clients will hide the latency win.</li>
-                                           * <li><strong>Audio is base64 inside the event payload</strong>, not the raw event bytes. Decode the <code>data.audio</code> field per event.</li>
-                                           * <li><strong><code>output_format=pcm</code></strong> gives the lowest overhead for streaming playback. <code>wav</code>/<code>mp3</code> work but add per-chunk framing bytes.</li>
-                                           * <li><strong>First-chunk latency</strong> depends on model warm-up + network distance. Use <code>output_format=pcm</code> and a streaming-friendly client to minimize what you can control.</li>
-                                           * <li><strong>JavaScript / TypeScript</strong>: the official <code>smallestai</code> npm package predates Lightning v3.1, so call this endpoint with <code>fetch</code> as shown above.</li>
-                                           * </ul>
-                                           */
-                                          public SmallestAIHttpResponse<Iterable<Object>> synthesizeSseLightningV31(
-                                              LightningV31Request request,
-                                              RequestOptions requestOptions) {
-                                            HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getWavesURL()).newBuilder()
-
-                                              .addPathSegments("waves/v1/lightning-v3.1/stream");if (requestOptions != null) {
-                                                requestOptions.getQueryParameters().forEach((_key, _value) -> {
-                                                  httpUrl.addQueryParameter(_key, _value);
-                                                } );
-                                              }
-                                              RequestBody body;
-                                              try {
-                                                body = RequestBody.create(ObjectMappers.JSON_MAPPER.writeValueAsBytes(request), MediaTypes.APPLICATION_JSON);
-                                              }
-                                              catch(JsonProcessingException e) {
-                                                throw new SmallestAIException("Failed to serialize request", e);
-                                              }
-                                              Request okhttpRequest = new Request.Builder()
-                                                .url(httpUrl.build())
-                                                .method("POST", body)
-                                                .headers(Headers.of(clientOptions.headers(requestOptions)))
-                                                .addHeader("Content-Type", "application/json")
-                                                .build();
-                                              OkHttpClient client = clientOptions.httpClient();
-                                              if (requestOptions != null && requestOptions.getTimeout().isPresent()) {
-                                                client = clientOptions.httpClientWithTimeout(requestOptions);
-                                              }
-                                              if (requestOptions != null && requestOptions.getMaxRetries().isPresent()) {
-                                                okhttpRequest = okhttpRequest.newBuilder().tag(RetryInterceptor.MaxRetriesOverride.class, new RetryInterceptor.MaxRetriesOverride(requestOptions.getMaxRetries().get())).build();
-                                              }
-                                              client = client.newBuilder().callTimeout(0, TimeUnit.SECONDS).build();
-                                              try {
-                                                Response response = client.newCall(okhttpRequest).execute();
-                                                ResponseBody responseBody = response.body();
-                                                if (response.isSuccessful()) {
-                                                  return new SmallestAIHttpResponse<>(Stream.fromSse(Object.class, new ResponseBodyReader(response)), response);
-                                                }
-                                                String responseBodyString = responseBody != null ? responseBody.string() : "{}";
-                                                try {
-                                                  switch (response.code()) {
-                                                    case 400:throw new BadRequestError(ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
-                                                    case 401:throw new UnauthorizedError(ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
-                                                    case 500:throw new InternalServerError(ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
-                                                  }
-                                                }
-                                                catch (JsonProcessingException ignored) {
-                                                  // unable to map error response, throwing generic error
-                                                }
-                                                Object errorBody = ObjectMappers.parseErrorBody(responseBodyString);
-                                                throw new SmallestAIApiException("Error with status code " + response.code(), response.code(), errorBody, response);
-                                              }
-                                              catch (JsonProcessingException e) {
-                                                throw new SmallestAIException("Failed to deserialize response: " + e.getMessage(), e);
-                                              }
-                                              catch (IOException e) {
-                                                throw new SmallestAIException("Network error executing HTTP request", e);
-                                              }
-                                            }
-
-                                            /**
-                                             * Transcribe an audio file to text using the Pulse model. The fastest way to get a transcript when you already have a recording — pass either the raw bytes or a URL.
-                                             * <h2>When to use this</h2>
-                                             * <p>Use this endpoint when you have a complete audio file (call recording, voicemail, podcast episode) and want the transcript back in one response. For live transcription as audio arrives, use the realtime WebSocket endpoint (<code>WSS /waves/v1/pulse/get_text</code>) instead.</p>
-                                             * <h2>Input methods</h2>
-                                             * <p>Send the audio in one of two ways:</p>
-                                             * <ol>
-                                             * <li><strong>Raw bytes</strong> — <code>Content-Type: application/octet-stream</code> with the audio in the body. All knobs (<code>language</code>, <code>word_timestamps</code>, etc.) are query parameters.</li>
-                                             * <li><strong>URL</strong> — <code>Content-Type: application/json</code> with <code>{&quot;url&quot;: &quot;...&quot;}</code> in the body. Useful when the audio already lives in object storage. Same query parameters apply.</li>
-                                             * </ol>
-                                             * <p>Pulse autodetects the language across 30+ supported locales. Pass <code>language</code> explicitly when you already know it — detection is fast but skipping it is faster.</p>
-                                             * <h2>Examples</h2>
-                                             * <p><strong>cURL</strong> (raw bytes)</p>
-                                             * <pre><code class="language-bash">curl -X POST &quot;https://api.smallest.ai/waves/v1/pulse/get_text?language=en&amp;word_timestamps=true&quot; \
-                                             *   -H &quot;Authorization: Bearer $SMALLEST_API_KEY&quot; \
-                                             *   -H &quot;Content-Type: application/octet-stream&quot; \
-                                             *   --data-binary &quot;@./call.wav&quot;
-                                             * </code></pre>
-                                             * <p><strong>cURL</strong> (URL)</p>
-                                             * <pre><code class="language-bash">curl -X POST &quot;https://api.smallest.ai/waves/v1/pulse/get_text?language=en&quot; \
-                                             *   -H &quot;Authorization: Bearer $SMALLEST_API_KEY&quot; \
-                                             *   -H &quot;Content-Type: application/json&quot; \
-                                             *   -d '{&quot;url&quot;: &quot;https://your-bucket.s3.amazonaws.com/call.wav&quot;}'
-                                             * </code></pre>
-                                             * <p><strong>Python</strong> (<code>pip install smallestai&gt;=4.4.0</code>)</p>
-                                             * <pre><code class="language-python">from smallestai import SmallestAI
-                                             *
-                                             * client = SmallestAI(api_key=&quot;YOUR_API_KEY&quot;)
-                                             * with open(&quot;./call.wav&quot;, &quot;rb&quot;) as f:
-                                             *     result = client.waves.transcribe_pulse(
-                                             *         request=f.read(),
-                                             *         language=&quot;en&quot;,
-                                             *         word_timestamps=True,
-                                             *         diarize=True,
-                                             *     )
-                                             * print(result.status)         # &quot;success&quot;
-                                             * print(result.transcription)  # the transcript string
-                                             * </code></pre>
-                                             * <p><strong>JavaScript / TypeScript</strong> (using <code>fetch</code>)</p>
-                                             * <pre><code class="language-typescript">import { readFileSync } from &quot;node:fs&quot;;
-                                             *
-                                             * const audio = readFileSync(&quot;./call.wav&quot;);
-                                             * const params = new URLSearchParams({ language: &quot;en&quot;, word_timestamps: &quot;true&quot;, diarize: &quot;true&quot; });
-                                             *
-                                             * const res = await fetch(`https://api.smallest.ai/waves/v1/pulse/get_text?${params}`, {
-                                             *   method: &quot;POST&quot;,
-                                             *   headers: {
-                                             *     Authorization: `Bearer ${process.env.SMALLEST_API_KEY}`,
-                                             *     &quot;Content-Type&quot;: &quot;application/octet-stream&quot;,
-                                             *   },
-                                             *   body: audio,
-                                             * });
-                                             * const result = await res.json();
-                                             * console.log(result.transcription);
-                                             * </code></pre>
-                                             * <h2>Common gotchas</h2>
-                                             * <ul>
-                                             * <li><strong>Max file size is 250 MB.</strong> Larger files return HTTP <code>400</code> with <code>{errors: &quot;Audio data too large&quot;, status: &quot;error&quot;, message: &quot;Error handling audio data&quot;}</code>. Compress to mono 16 kHz PCM if you're close to the limit; quality is unaffected.</li>
-                                             * <li><strong>Formatting flags (<code>format</code>, <code>punctuate</code>, <code>capitalize</code>)</strong> are accepted at the wire level and exposed in the Python SDK as of <code>smallestai&gt;=4.4.0</code>. Today they currently return the same transcript regardless of value — pass them in your integration so it works as the behavior changes.</li>
-                                             * <li><strong>Webhook-driven flow</strong>: pass <code>webhook_url</code> to receive the transcript asynchronously. The endpoint returns immediately; the transcript hits your webhook when ready. Useful for long files where you don't want to hold an HTTP connection open.</li>
-                                             * <li><strong>Speaker diarization</strong> (<code>diarize=true</code>) adds latency. Skip it if you only need the words.</li>
-                                             * <li><strong>JavaScript / TypeScript</strong>: the official <code>smallestai</code> npm package predates the Pulse model, so call this endpoint with <code>fetch</code> or <code>axios</code> as shown above.</li>
-                                             * </ul>
-                                             */
-                                            public SmallestAIHttpResponse<TranscribePulseWavesResponse> transcribePulse(
-                                                byte[] body) {
-                                              return transcribePulse(TranscribePulseWavesRequest.builder().body(body).build());
-                                            }
-
-                                            /**
-                                             * Transcribe an audio file to text using the Pulse model. The fastest way to get a transcript when you already have a recording — pass either the raw bytes or a URL.
-                                             * <h2>When to use this</h2>
-                                             * <p>Use this endpoint when you have a complete audio file (call recording, voicemail, podcast episode) and want the transcript back in one response. For live transcription as audio arrives, use the realtime WebSocket endpoint (<code>WSS /waves/v1/pulse/get_text</code>) instead.</p>
-                                             * <h2>Input methods</h2>
-                                             * <p>Send the audio in one of two ways:</p>
-                                             * <ol>
-                                             * <li><strong>Raw bytes</strong> — <code>Content-Type: application/octet-stream</code> with the audio in the body. All knobs (<code>language</code>, <code>word_timestamps</code>, etc.) are query parameters.</li>
-                                             * <li><strong>URL</strong> — <code>Content-Type: application/json</code> with <code>{&quot;url&quot;: &quot;...&quot;}</code> in the body. Useful when the audio already lives in object storage. Same query parameters apply.</li>
-                                             * </ol>
-                                             * <p>Pulse autodetects the language across 30+ supported locales. Pass <code>language</code> explicitly when you already know it — detection is fast but skipping it is faster.</p>
-                                             * <h2>Examples</h2>
-                                             * <p><strong>cURL</strong> (raw bytes)</p>
-                                             * <pre><code class="language-bash">curl -X POST &quot;https://api.smallest.ai/waves/v1/pulse/get_text?language=en&amp;word_timestamps=true&quot; \
-                                             *   -H &quot;Authorization: Bearer $SMALLEST_API_KEY&quot; \
-                                             *   -H &quot;Content-Type: application/octet-stream&quot; \
-                                             *   --data-binary &quot;@./call.wav&quot;
-                                             * </code></pre>
-                                             * <p><strong>cURL</strong> (URL)</p>
-                                             * <pre><code class="language-bash">curl -X POST &quot;https://api.smallest.ai/waves/v1/pulse/get_text?language=en&quot; \
-                                             *   -H &quot;Authorization: Bearer $SMALLEST_API_KEY&quot; \
-                                             *   -H &quot;Content-Type: application/json&quot; \
-                                             *   -d '{&quot;url&quot;: &quot;https://your-bucket.s3.amazonaws.com/call.wav&quot;}'
-                                             * </code></pre>
-                                             * <p><strong>Python</strong> (<code>pip install smallestai&gt;=4.4.0</code>)</p>
-                                             * <pre><code class="language-python">from smallestai import SmallestAI
-                                             *
-                                             * client = SmallestAI(api_key=&quot;YOUR_API_KEY&quot;)
-                                             * with open(&quot;./call.wav&quot;, &quot;rb&quot;) as f:
-                                             *     result = client.waves.transcribe_pulse(
-                                             *         request=f.read(),
-                                             *         language=&quot;en&quot;,
-                                             *         word_timestamps=True,
-                                             *         diarize=True,
-                                             *     )
-                                             * print(result.status)         # &quot;success&quot;
-                                             * print(result.transcription)  # the transcript string
-                                             * </code></pre>
-                                             * <p><strong>JavaScript / TypeScript</strong> (using <code>fetch</code>)</p>
-                                             * <pre><code class="language-typescript">import { readFileSync } from &quot;node:fs&quot;;
-                                             *
-                                             * const audio = readFileSync(&quot;./call.wav&quot;);
-                                             * const params = new URLSearchParams({ language: &quot;en&quot;, word_timestamps: &quot;true&quot;, diarize: &quot;true&quot; });
-                                             *
-                                             * const res = await fetch(`https://api.smallest.ai/waves/v1/pulse/get_text?${params}`, {
-                                             *   method: &quot;POST&quot;,
-                                             *   headers: {
-                                             *     Authorization: `Bearer ${process.env.SMALLEST_API_KEY}`,
-                                             *     &quot;Content-Type&quot;: &quot;application/octet-stream&quot;,
-                                             *   },
-                                             *   body: audio,
-                                             * });
-                                             * const result = await res.json();
-                                             * console.log(result.transcription);
-                                             * </code></pre>
-                                             * <h2>Common gotchas</h2>
-                                             * <ul>
-                                             * <li><strong>Max file size is 250 MB.</strong> Larger files return HTTP <code>400</code> with <code>{errors: &quot;Audio data too large&quot;, status: &quot;error&quot;, message: &quot;Error handling audio data&quot;}</code>. Compress to mono 16 kHz PCM if you're close to the limit; quality is unaffected.</li>
-                                             * <li><strong>Formatting flags (<code>format</code>, <code>punctuate</code>, <code>capitalize</code>)</strong> are accepted at the wire level and exposed in the Python SDK as of <code>smallestai&gt;=4.4.0</code>. Today they currently return the same transcript regardless of value — pass them in your integration so it works as the behavior changes.</li>
-                                             * <li><strong>Webhook-driven flow</strong>: pass <code>webhook_url</code> to receive the transcript asynchronously. The endpoint returns immediately; the transcript hits your webhook when ready. Useful for long files where you don't want to hold an HTTP connection open.</li>
-                                             * <li><strong>Speaker diarization</strong> (<code>diarize=true</code>) adds latency. Skip it if you only need the words.</li>
-                                             * <li><strong>JavaScript / TypeScript</strong>: the official <code>smallestai</code> npm package predates the Pulse model, so call this endpoint with <code>fetch</code> or <code>axios</code> as shown above.</li>
-                                             * </ul>
-                                             */
-                                            public SmallestAIHttpResponse<TranscribePulseWavesResponse> transcribePulse(
-                                                byte[] body, RequestOptions requestOptions) {
-                                              return transcribePulse(TranscribePulseWavesRequest.builder().body(body).build(), requestOptions);
-                                            }
-
-                                            /**
-                                             * Transcribe an audio file to text using the Pulse model. The fastest way to get a transcript when you already have a recording — pass either the raw bytes or a URL.
-                                             * <h2>When to use this</h2>
-                                             * <p>Use this endpoint when you have a complete audio file (call recording, voicemail, podcast episode) and want the transcript back in one response. For live transcription as audio arrives, use the realtime WebSocket endpoint (<code>WSS /waves/v1/pulse/get_text</code>) instead.</p>
-                                             * <h2>Input methods</h2>
-                                             * <p>Send the audio in one of two ways:</p>
-                                             * <ol>
-                                             * <li><strong>Raw bytes</strong> — <code>Content-Type: application/octet-stream</code> with the audio in the body. All knobs (<code>language</code>, <code>word_timestamps</code>, etc.) are query parameters.</li>
-                                             * <li><strong>URL</strong> — <code>Content-Type: application/json</code> with <code>{&quot;url&quot;: &quot;...&quot;}</code> in the body. Useful when the audio already lives in object storage. Same query parameters apply.</li>
-                                             * </ol>
-                                             * <p>Pulse autodetects the language across 30+ supported locales. Pass <code>language</code> explicitly when you already know it — detection is fast but skipping it is faster.</p>
-                                             * <h2>Examples</h2>
-                                             * <p><strong>cURL</strong> (raw bytes)</p>
-                                             * <pre><code class="language-bash">curl -X POST &quot;https://api.smallest.ai/waves/v1/pulse/get_text?language=en&amp;word_timestamps=true&quot; \
-                                             *   -H &quot;Authorization: Bearer $SMALLEST_API_KEY&quot; \
-                                             *   -H &quot;Content-Type: application/octet-stream&quot; \
-                                             *   --data-binary &quot;@./call.wav&quot;
-                                             * </code></pre>
-                                             * <p><strong>cURL</strong> (URL)</p>
-                                             * <pre><code class="language-bash">curl -X POST &quot;https://api.smallest.ai/waves/v1/pulse/get_text?language=en&quot; \
-                                             *   -H &quot;Authorization: Bearer $SMALLEST_API_KEY&quot; \
-                                             *   -H &quot;Content-Type: application/json&quot; \
-                                             *   -d '{&quot;url&quot;: &quot;https://your-bucket.s3.amazonaws.com/call.wav&quot;}'
-                                             * </code></pre>
-                                             * <p><strong>Python</strong> (<code>pip install smallestai&gt;=4.4.0</code>)</p>
-                                             * <pre><code class="language-python">from smallestai import SmallestAI
-                                             *
-                                             * client = SmallestAI(api_key=&quot;YOUR_API_KEY&quot;)
-                                             * with open(&quot;./call.wav&quot;, &quot;rb&quot;) as f:
-                                             *     result = client.waves.transcribe_pulse(
-                                             *         request=f.read(),
-                                             *         language=&quot;en&quot;,
-                                             *         word_timestamps=True,
-                                             *         diarize=True,
-                                             *     )
-                                             * print(result.status)         # &quot;success&quot;
-                                             * print(result.transcription)  # the transcript string
-                                             * </code></pre>
-                                             * <p><strong>JavaScript / TypeScript</strong> (using <code>fetch</code>)</p>
-                                             * <pre><code class="language-typescript">import { readFileSync } from &quot;node:fs&quot;;
-                                             *
-                                             * const audio = readFileSync(&quot;./call.wav&quot;);
-                                             * const params = new URLSearchParams({ language: &quot;en&quot;, word_timestamps: &quot;true&quot;, diarize: &quot;true&quot; });
-                                             *
-                                             * const res = await fetch(`https://api.smallest.ai/waves/v1/pulse/get_text?${params}`, {
-                                             *   method: &quot;POST&quot;,
-                                             *   headers: {
-                                             *     Authorization: `Bearer ${process.env.SMALLEST_API_KEY}`,
-                                             *     &quot;Content-Type&quot;: &quot;application/octet-stream&quot;,
-                                             *   },
-                                             *   body: audio,
-                                             * });
-                                             * const result = await res.json();
-                                             * console.log(result.transcription);
-                                             * </code></pre>
-                                             * <h2>Common gotchas</h2>
-                                             * <ul>
-                                             * <li><strong>Max file size is 250 MB.</strong> Larger files return HTTP <code>400</code> with <code>{errors: &quot;Audio data too large&quot;, status: &quot;error&quot;, message: &quot;Error handling audio data&quot;}</code>. Compress to mono 16 kHz PCM if you're close to the limit; quality is unaffected.</li>
-                                             * <li><strong>Formatting flags (<code>format</code>, <code>punctuate</code>, <code>capitalize</code>)</strong> are accepted at the wire level and exposed in the Python SDK as of <code>smallestai&gt;=4.4.0</code>. Today they currently return the same transcript regardless of value — pass them in your integration so it works as the behavior changes.</li>
-                                             * <li><strong>Webhook-driven flow</strong>: pass <code>webhook_url</code> to receive the transcript asynchronously. The endpoint returns immediately; the transcript hits your webhook when ready. Useful for long files where you don't want to hold an HTTP connection open.</li>
-                                             * <li><strong>Speaker diarization</strong> (<code>diarize=true</code>) adds latency. Skip it if you only need the words.</li>
-                                             * <li><strong>JavaScript / TypeScript</strong>: the official <code>smallestai</code> npm package predates the Pulse model, so call this endpoint with <code>fetch</code> or <code>axios</code> as shown above.</li>
-                                             * </ul>
-                                             */
-                                            public SmallestAIHttpResponse<TranscribePulseWavesResponse> transcribePulse(
-                                                TranscribePulseWavesRequest request) {
-                                              return transcribePulse(request,null);
-                                            }
-
-                                            /**
-                                             * Transcribe an audio file to text using the Pulse model. The fastest way to get a transcript when you already have a recording — pass either the raw bytes or a URL.
-                                             * <h2>When to use this</h2>
-                                             * <p>Use this endpoint when you have a complete audio file (call recording, voicemail, podcast episode) and want the transcript back in one response. For live transcription as audio arrives, use the realtime WebSocket endpoint (<code>WSS /waves/v1/pulse/get_text</code>) instead.</p>
-                                             * <h2>Input methods</h2>
-                                             * <p>Send the audio in one of two ways:</p>
-                                             * <ol>
-                                             * <li><strong>Raw bytes</strong> — <code>Content-Type: application/octet-stream</code> with the audio in the body. All knobs (<code>language</code>, <code>word_timestamps</code>, etc.) are query parameters.</li>
-                                             * <li><strong>URL</strong> — <code>Content-Type: application/json</code> with <code>{&quot;url&quot;: &quot;...&quot;}</code> in the body. Useful when the audio already lives in object storage. Same query parameters apply.</li>
-                                             * </ol>
-                                             * <p>Pulse autodetects the language across 30+ supported locales. Pass <code>language</code> explicitly when you already know it — detection is fast but skipping it is faster.</p>
-                                             * <h2>Examples</h2>
-                                             * <p><strong>cURL</strong> (raw bytes)</p>
-                                             * <pre><code class="language-bash">curl -X POST &quot;https://api.smallest.ai/waves/v1/pulse/get_text?language=en&amp;word_timestamps=true&quot; \
-                                             *   -H &quot;Authorization: Bearer $SMALLEST_API_KEY&quot; \
-                                             *   -H &quot;Content-Type: application/octet-stream&quot; \
-                                             *   --data-binary &quot;@./call.wav&quot;
-                                             * </code></pre>
-                                             * <p><strong>cURL</strong> (URL)</p>
-                                             * <pre><code class="language-bash">curl -X POST &quot;https://api.smallest.ai/waves/v1/pulse/get_text?language=en&quot; \
-                                             *   -H &quot;Authorization: Bearer $SMALLEST_API_KEY&quot; \
-                                             *   -H &quot;Content-Type: application/json&quot; \
-                                             *   -d '{&quot;url&quot;: &quot;https://your-bucket.s3.amazonaws.com/call.wav&quot;}'
-                                             * </code></pre>
-                                             * <p><strong>Python</strong> (<code>pip install smallestai&gt;=4.4.0</code>)</p>
-                                             * <pre><code class="language-python">from smallestai import SmallestAI
-                                             *
-                                             * client = SmallestAI(api_key=&quot;YOUR_API_KEY&quot;)
-                                             * with open(&quot;./call.wav&quot;, &quot;rb&quot;) as f:
-                                             *     result = client.waves.transcribe_pulse(
-                                             *         request=f.read(),
-                                             *         language=&quot;en&quot;,
-                                             *         word_timestamps=True,
-                                             *         diarize=True,
-                                             *     )
-                                             * print(result.status)         # &quot;success&quot;
-                                             * print(result.transcription)  # the transcript string
-                                             * </code></pre>
-                                             * <p><strong>JavaScript / TypeScript</strong> (using <code>fetch</code>)</p>
-                                             * <pre><code class="language-typescript">import { readFileSync } from &quot;node:fs&quot;;
-                                             *
-                                             * const audio = readFileSync(&quot;./call.wav&quot;);
-                                             * const params = new URLSearchParams({ language: &quot;en&quot;, word_timestamps: &quot;true&quot;, diarize: &quot;true&quot; });
-                                             *
-                                             * const res = await fetch(`https://api.smallest.ai/waves/v1/pulse/get_text?${params}`, {
-                                             *   method: &quot;POST&quot;,
-                                             *   headers: {
-                                             *     Authorization: `Bearer ${process.env.SMALLEST_API_KEY}`,
-                                             *     &quot;Content-Type&quot;: &quot;application/octet-stream&quot;,
-                                             *   },
-                                             *   body: audio,
-                                             * });
-                                             * const result = await res.json();
-                                             * console.log(result.transcription);
-                                             * </code></pre>
-                                             * <h2>Common gotchas</h2>
-                                             * <ul>
-                                             * <li><strong>Max file size is 250 MB.</strong> Larger files return HTTP <code>400</code> with <code>{errors: &quot;Audio data too large&quot;, status: &quot;error&quot;, message: &quot;Error handling audio data&quot;}</code>. Compress to mono 16 kHz PCM if you're close to the limit; quality is unaffected.</li>
-                                             * <li><strong>Formatting flags (<code>format</code>, <code>punctuate</code>, <code>capitalize</code>)</strong> are accepted at the wire level and exposed in the Python SDK as of <code>smallestai&gt;=4.4.0</code>. Today they currently return the same transcript regardless of value — pass them in your integration so it works as the behavior changes.</li>
-                                             * <li><strong>Webhook-driven flow</strong>: pass <code>webhook_url</code> to receive the transcript asynchronously. The endpoint returns immediately; the transcript hits your webhook when ready. Useful for long files where you don't want to hold an HTTP connection open.</li>
-                                             * <li><strong>Speaker diarization</strong> (<code>diarize=true</code>) adds latency. Skip it if you only need the words.</li>
-                                             * <li><strong>JavaScript / TypeScript</strong>: the official <code>smallestai</code> npm package predates the Pulse model, so call this endpoint with <code>fetch</code> or <code>axios</code> as shown above.</li>
-                                             * </ul>
-                                             */
-                                            public SmallestAIHttpResponse<TranscribePulseWavesResponse> transcribePulse(
-                                                TranscribePulseWavesRequest request,
-                                                RequestOptions requestOptions) {
-                                              HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getWavesURL()).newBuilder()
-
-                                                .addPathSegments("waves/v1/pulse/get_text");if (request.getLanguage().isPresent()) {
-                                                  QueryStringMapper.addQueryParameter(httpUrl, "language", request.getLanguage().get(), false);
-                                                }
-                                                if (request.getEncoding().isPresent()) {
-                                                  QueryStringMapper.addQueryParameter(httpUrl, "encoding", request.getEncoding().get(), false);
-                                                }
-                                                if (request.getWebhookUrl().isPresent()) {
-                                                  QueryStringMapper.addQueryParameter(httpUrl, "webhook_url", request.getWebhookUrl().get(), false);
-                                                }
-                                                if (request.getWebhookExtra().isPresent()) {
-                                                  QueryStringMapper.addQueryParameter(httpUrl, "webhook_extra", request.getWebhookExtra().get(), false);
-                                                }
-                                                if (request.getWordTimestamps().isPresent()) {
-                                                  QueryStringMapper.addQueryParameter(httpUrl, "word_timestamps", request.getWordTimestamps().get(), false);
-                                                }
-                                                if (request.getDiarize().isPresent()) {
-                                                  QueryStringMapper.addQueryParameter(httpUrl, "diarize", request.getDiarize().get(), false);
-                                                }
-                                                if (request.getGenderDetection().isPresent()) {
-                                                  QueryStringMapper.addQueryParameter(httpUrl, "gender_detection", request.getGenderDetection().get(), false);
-                                                }
-                                                if (request.getEmotionDetection().isPresent()) {
-                                                  QueryStringMapper.addQueryParameter(httpUrl, "emotion_detection", request.getEmotionDetection().get(), false);
-                                                }
-                                                if (request.getFormat().isPresent()) {
-                                                  QueryStringMapper.addQueryParameter(httpUrl, "format", request.getFormat().get(), false);
-                                                }
-                                                if (request.getPunctuate().isPresent()) {
-                                                  QueryStringMapper.addQueryParameter(httpUrl, "punctuate", request.getPunctuate().get(), false);
-                                                }
-                                                if (request.getCapitalize().isPresent()) {
-                                                  QueryStringMapper.addQueryParameter(httpUrl, "capitalize", request.getCapitalize().get(), false);
-                                                }
-                                                if (requestOptions != null) {
-                                                  requestOptions.getQueryParameters().forEach((_key, _value) -> {
-                                                    httpUrl.addQueryParameter(_key, _value);
-                                                  } );
-                                                }
-                                                RequestBody body = new InputStreamRequestBody(MediaType.parse("application/octet-stream"), new ByteArrayInputStream(request.getBody()));
-                                                Request.Builder _requestBuilder = new Request.Builder()
-                                                  .url(httpUrl.build())
-                                                  .method("POST", body)
-                                                  .headers(Headers.of(clientOptions.headers(requestOptions)))
-                                                  .addHeader("Content-Type", "application/octet-stream")
-                                                  .addHeader("Accept", "application/json");
-                                                Request okhttpRequest = _requestBuilder.build();
-                                                OkHttpClient client = clientOptions.httpClient();
-                                                if (requestOptions != null && requestOptions.getTimeout().isPresent()) {
-                                                  client = clientOptions.httpClientWithTimeout(requestOptions);
-                                                }
-                                                if (requestOptions != null && requestOptions.getMaxRetries().isPresent()) {
-                                                  okhttpRequest = okhttpRequest.newBuilder().tag(RetryInterceptor.MaxRetriesOverride.class, new RetryInterceptor.MaxRetriesOverride(requestOptions.getMaxRetries().get())).build();
-                                                }
-                                                try (Response response = client.newCall(okhttpRequest).execute()) {
-                                                  ResponseBody responseBody = response.body();
-                                                  String responseBodyString = responseBody != null ? responseBody.string() : "{}";
-                                                  if (response.isSuccessful()) {
-                                                    return new SmallestAIHttpResponse<>(ObjectMappers.JSON_MAPPER.readValue(responseBodyString, TranscribePulseWavesResponse.class), response);
-                                                  }
-                                                  try {
-                                                    switch (response.code()) {
-                                                      case 400:throw new BadRequestError(ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
-                                                      case 401:throw new UnauthorizedError(ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
-                                                      case 500:throw new InternalServerError(ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
-                                                    }
-                                                  }
-                                                  catch (JsonProcessingException ignored) {
-                                                    // unable to map error response, throwing generic error
-                                                  }
-                                                  Object errorBody = ObjectMappers.parseErrorBody(responseBodyString);
-                                                  throw new SmallestAIApiException("Error with status code " + response.code(), response.code(), errorBody, response);
-                                                }
-                                                catch (JsonProcessingException e) {
-                                                  throw new SmallestAIException("Failed to deserialize response: " + e.getMessage(), e);
-                                                }
-                                                catch (IOException e) {
-                                                  throw new SmallestAIException("Network error executing HTTP request", e);
-                                                }
-                                              }
-                                            }
+                                        }

@@ -7,7 +7,6 @@ package ai.smallest.resources.waves;
 import ai.smallest.core.ClientOptions;
 import ai.smallest.core.RequestOptions;
 import ai.smallest.core.Suppliers;
-import ai.smallest.resources.waves.lightningv2tts.LightningV2TtsClient;
 import ai.smallest.resources.waves.lightningv31tts.LightningV31TtsClient;
 import ai.smallest.resources.waves.pulsesttstreaming.PulseSttStreamingClient;
 import ai.smallest.resources.waves.requests.AddVoiceWavesRequest;
@@ -29,7 +28,6 @@ import ai.smallest.resources.waves.types.GetVoicesWavesRequestModel;
 import ai.smallest.resources.waves.types.GetVoicesWavesResponse;
 import ai.smallest.resources.waves.types.LightningLargeRequest;
 import ai.smallest.resources.waves.types.LightningV31Request;
-import ai.smallest.resources.waves.types.Lightningv2Request;
 import ai.smallest.resources.waves.types.PronunciationDict;
 import ai.smallest.resources.waves.types.TranscribePulseWavesResponse;
 import ai.smallest.resources.waves.types.TtsRequest;
@@ -52,8 +50,6 @@ public class WavesClient {
 
   protected final Supplier<StreamingTtsClient> streamingTtsClient;
 
-  protected final Supplier<LightningV2TtsClient> lightningV2TtsClient;
-
   protected final Supplier<LightningV31TtsClient> lightningV31TtsClient;
 
   protected final Supplier<PulseSttStreamingClient> pulseSttStreamingClient;
@@ -65,7 +61,6 @@ public class WavesClient {
     this.rawClient = new RawWavesClient(clientOptions);
     this.ttsClient = Suppliers.memoize(() -> new TtsClient(clientOptions));
     this.streamingTtsClient = Suppliers.memoize(() -> new StreamingTtsClient(clientOptions));
-    this.lightningV2TtsClient = Suppliers.memoize(() -> new LightningV2TtsClient(clientOptions));
     this.lightningV31TtsClient = Suppliers.memoize(() -> new LightningV31TtsClient(clientOptions));
     this.pulseSttStreamingClient = Suppliers.memoize(() -> new PulseSttStreamingClient(clientOptions));
     this.speechToSpeechClient = Suppliers.memoize(() -> new SpeechToSpeechClient(clientOptions));
@@ -169,21 +164,6 @@ public class WavesClient {
   }
 
   /**
-   * Get speech for given text using the Waves API
-   */
-  public InputStream synthesizeLightningV2(Lightningv2Request request) {
-    return this.rawClient.synthesizeLightningV2(request).body();
-  }
-
-  /**
-   * Get speech for given text using the Waves API
-   */
-  public InputStream synthesizeLightningV2(Lightningv2Request request,
-      RequestOptions requestOptions) {
-    return this.rawClient.synthesizeLightningV2(request, requestOptions).body();
-  }
-
-  /**
    * The Lightning-Large SSE API provides real-time text-to-speech streaming capabilities with high-quality voice synthesis. This API uses Server-Sent Events (SSE) to deliver audio chunks as they're generated, enabling low-latency audio playback without waiting for the entire audio file to process.
    * <h2>When to Use</h2>
    * <ul>
@@ -224,51 +204,6 @@ public class WavesClient {
   public Iterable<Object> synthesizeSseLightningLarge(LightningLargeRequest request,
       RequestOptions requestOptions) {
     return this.rawClient.synthesizeSseLightningLarge(request, requestOptions).body();
-  }
-
-  /**
-   * The Lightning v2 SSE API provides real-time text-to-speech streaming capabilities with high-quality voice synthesis. This API uses Server-Sent Events (SSE) to deliver audio chunks as they're generated, enabling low-latency audio playback without waiting for the entire audio file to process.
-   * For an end-to-end example of how to use the Lightning v2 SSE API, check out <a href="https://github.com/smallest-inc/waves-examples/blob/main/lightning_v2/http_streaming/http_streaming_api.py">Text to Speech (SSE) Example</a>
-   * <h2>When to Use</h2>
-   * <ul>
-   * <li><strong>Interactive Applications</strong>: Perfect for chatbots, virtual assistants, and other applications requiring immediate voice responses</li>
-   * <li><strong>Long-Form Content</strong>: Efficiently stream audio for articles, stories, or other long-form content without buffering delays</li>
-   * <li><strong>Voice User Interfaces</strong>: Create natural-sounding voice interfaces with minimal perceived latency</li>
-   * <li><strong>Accessibility Solutions</strong>: Provide real-time audio versions of written content for users with visual impairments</li>
-   * </ul>
-   * <h2>How It Works</h2>
-   * <ol>
-   * <li><strong>Make a POST Request</strong>: Send your text and voice settings to the API endpoint</li>
-   * <li><strong>Receive Audio Chunks</strong>: The API processes your text and streams audio back as base64-encoded chunks with 1024 byte size</li>
-   * <li><strong>Process the Stream</strong>: Handle the SSE events to decode and play audio chunks sequentially</li>
-   * <li><strong>End of Stream</strong>: The API sends a completion event when all audio has been delivered</li>
-   * </ol>
-   */
-  public Iterable<Object> synthesizeSseLightningV2(Lightningv2Request request) {
-    return this.rawClient.synthesizeSseLightningV2(request).body();
-  }
-
-  /**
-   * The Lightning v2 SSE API provides real-time text-to-speech streaming capabilities with high-quality voice synthesis. This API uses Server-Sent Events (SSE) to deliver audio chunks as they're generated, enabling low-latency audio playback without waiting for the entire audio file to process.
-   * For an end-to-end example of how to use the Lightning v2 SSE API, check out <a href="https://github.com/smallest-inc/waves-examples/blob/main/lightning_v2/http_streaming/http_streaming_api.py">Text to Speech (SSE) Example</a>
-   * <h2>When to Use</h2>
-   * <ul>
-   * <li><strong>Interactive Applications</strong>: Perfect for chatbots, virtual assistants, and other applications requiring immediate voice responses</li>
-   * <li><strong>Long-Form Content</strong>: Efficiently stream audio for articles, stories, or other long-form content without buffering delays</li>
-   * <li><strong>Voice User Interfaces</strong>: Create natural-sounding voice interfaces with minimal perceived latency</li>
-   * <li><strong>Accessibility Solutions</strong>: Provide real-time audio versions of written content for users with visual impairments</li>
-   * </ul>
-   * <h2>How It Works</h2>
-   * <ol>
-   * <li><strong>Make a POST Request</strong>: Send your text and voice settings to the API endpoint</li>
-   * <li><strong>Receive Audio Chunks</strong>: The API processes your text and streams audio back as base64-encoded chunks with 1024 byte size</li>
-   * <li><strong>Process the Stream</strong>: Handle the SSE events to decode and play audio chunks sequentially</li>
-   * <li><strong>End of Stream</strong>: The API sends a completion event when all audio has been delivered</li>
-   * </ol>
-   */
-  public Iterable<Object> synthesizeSseLightningV2(Lightningv2Request request,
-      RequestOptions requestOptions) {
-    return this.rawClient.synthesizeSseLightningV2(request, requestOptions).body();
   }
 
   /**
@@ -1281,10 +1216,6 @@ public class WavesClient {
 
   public StreamingTtsClient streamingTts() {
     return this.streamingTtsClient.get();
-  }
-
-  public LightningV2TtsClient lightningV2Tts() {
-    return this.lightningV2TtsClient.get();
   }
 
   public LightningV31TtsClient lightningV31Tts() {
