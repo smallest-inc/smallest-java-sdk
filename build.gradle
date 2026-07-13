@@ -1,0 +1,44 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+}
+
+group = 'ai.smallest'
+version = '0.1.0'
+
+repositories {
+    mavenCentral()
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+    withSourcesJar()
+    withJavadocJar()
+}
+
+dependencies {
+    api 'com.squareup.okhttp3:okhttp:4.12.0'
+    api 'com.fasterxml.jackson.core:jackson-databind:2.18.2'
+    api 'com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.18.2'
+    api 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.2'
+    compileOnly 'org.jetbrains:annotations:24.1.0'
+}
+
+tasks.withType(Javadoc).configureEach {
+    options.addStringOption('Xdoclint:none', '-quiet')
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            artifactId = 'smallest-java-sdk'
+            from components.java
+            pom {
+                name = 'Smallest AI Java SDK'
+                description = 'Official Java client for the Smallest AI API (Waves TTS/STT and Atoms voice agents).'
+                url = 'https://github.com/smallest-inc/smallest-java-sdk'
+            }
+        }
+    }
+}

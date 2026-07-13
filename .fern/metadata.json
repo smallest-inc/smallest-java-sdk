@@ -1,0 +1,12 @@
+{
+  "cliVersion": "5.44.7",
+  "generatorName": "fernapi/fern-java-sdk",
+  "generatorVersion": "4.13.0",
+  "generatorConfig": {
+    "client-class-name": "SmallestAI",
+    "package-prefix": "ai.smallest"
+  },
+  "originGitCommit": "04f10a96f19456be4e58411caf56823abe882a3e",
+  "originGitCommitIsDirty": true,
+  "invokedBy": "manual"
+}
