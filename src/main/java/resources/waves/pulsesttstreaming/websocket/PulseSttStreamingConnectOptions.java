@@ -5,7 +5,14 @@
 package ai.smallest.resources.waves.pulsesttstreaming.websocket;
 
 import ai.smallest.core.ObjectMappers;
+import ai.smallest.resources.waves.pulsesttstreaming.types.PulseStreamDiarize;
 import ai.smallest.resources.waves.pulsesttstreaming.types.PulseStreamEncoding;
+import ai.smallest.resources.waves.pulsesttstreaming.types.PulseStreamFinalizeOnWords;
+import ai.smallest.resources.waves.pulsesttstreaming.types.PulseStreamFormat;
+import ai.smallest.resources.waves.pulsesttstreaming.types.PulseStreamItnNormalize;
+import ai.smallest.resources.waves.pulsesttstreaming.types.PulseStreamRedactPci;
+import ai.smallest.resources.waves.pulsesttstreaming.types.PulseStreamRedactPii;
+import ai.smallest.resources.waves.pulsesttstreaming.types.PulseStreamSentenceTimestamps;
 import ai.smallest.resources.waves.pulsesttstreaming.types.PulseStreamVadEvents;
 import ai.smallest.resources.waves.pulsesttstreaming.types.PulseStreamWordTimestamps;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
@@ -39,17 +46,52 @@ public final class PulseSttStreamingConnectOptions {
 
   private final Optional<PulseStreamVadEvents> vadEvents;
 
+  private final Optional<PulseStreamFormat> format;
+
+  private final Optional<PulseStreamItnNormalize> itnNormalize;
+
+  private final Optional<PulseStreamSentenceTimestamps> sentenceTimestamps;
+
+  private final Optional<PulseStreamDiarize> diarize;
+
+  private final Optional<PulseStreamRedactPii> redactPii;
+
+  private final Optional<PulseStreamRedactPci> redactPci;
+
+  private final Optional<Integer> eouTimeoutMs;
+
+  private final Optional<String> keywords;
+
+  private final Optional<PulseStreamFinalizeOnWords> finalizeOnWords;
+
+  private final Optional<Integer> maxWords;
+
   private final Map<String, Object> additionalProperties;
 
   private PulseSttStreamingConnectOptions(Optional<String> language,
       Optional<PulseStreamEncoding> encoding, Optional<Integer> sampleRate,
       Optional<PulseStreamWordTimestamps> wordTimestamps, Optional<PulseStreamVadEvents> vadEvents,
-      Map<String, Object> additionalProperties) {
+      Optional<PulseStreamFormat> format, Optional<PulseStreamItnNormalize> itnNormalize,
+      Optional<PulseStreamSentenceTimestamps> sentenceTimestamps,
+      Optional<PulseStreamDiarize> diarize, Optional<PulseStreamRedactPii> redactPii,
+      Optional<PulseStreamRedactPci> redactPci, Optional<Integer> eouTimeoutMs,
+      Optional<String> keywords, Optional<PulseStreamFinalizeOnWords> finalizeOnWords,
+      Optional<Integer> maxWords, Map<String, Object> additionalProperties) {
     this.language = language;
     this.encoding = encoding;
     this.sampleRate = sampleRate;
     this.wordTimestamps = wordTimestamps;
     this.vadEvents = vadEvents;
+    this.format = format;
+    this.itnNormalize = itnNormalize;
+    this.sentenceTimestamps = sentenceTimestamps;
+    this.diarize = diarize;
+    this.redactPii = redactPii;
+    this.redactPci = redactPci;
+    this.eouTimeoutMs = eouTimeoutMs;
+    this.keywords = keywords;
+    this.finalizeOnWords = finalizeOnWords;
+    this.maxWords = maxWords;
     this.additionalProperties = additionalProperties;
   }
 
@@ -93,6 +135,86 @@ public final class PulseSttStreamingConnectOptions {
     return vadEvents;
   }
 
+  /**
+   * @return Enable punctuation and capitalization formatting in transcript responses.
+   */
+  @JsonProperty("format")
+  public Optional<PulseStreamFormat> getFormat() {
+    return format;
+  }
+
+  /**
+   * @return Inverse Text Normalization — convert spoken-form numbers, dates, currencies, phone numbers into written form in finalized transcripts.
+   */
+  @JsonProperty("itn_normalize")
+  public Optional<PulseStreamItnNormalize> getItnNormalize() {
+    return itnNormalize;
+  }
+
+  /**
+   * @return Include sentence-level timestamps (utterances) in transcription.
+   */
+  @JsonProperty("sentence_timestamps")
+  public Optional<PulseStreamSentenceTimestamps> getSentenceTimestamps() {
+    return sentenceTimestamps;
+  }
+
+  /**
+   * @return Enable speaker diarization to identify different speakers in the audio.
+   */
+  @JsonProperty("diarize")
+  public Optional<PulseStreamDiarize> getDiarize() {
+    return diarize;
+  }
+
+  /**
+   * @return Redact personally identifiable information (name, address, etc).
+   */
+  @JsonProperty("redact_pii")
+  public Optional<PulseStreamRedactPii> getRedactPii() {
+    return redactPii;
+  }
+
+  /**
+   * @return Redact payment card information (credit card, CVV, account number, etc).
+   */
+  @JsonProperty("redact_pci")
+  public Optional<PulseStreamRedactPci> getRedactPci() {
+    return redactPci;
+  }
+
+  /**
+   * @return Milliseconds to wait after speech ends before flushing the transcript (end-of-utterance).
+   */
+  @JsonProperty("eou_timeout_ms")
+  public Optional<Integer> getEouTimeoutMs() {
+    return eouTimeoutMs;
+  }
+
+  /**
+   * @return Comma-separated words/phrases to boost, each optionally followed by :INTENSIFIER (e.g. NVIDIA:5,Jensen). Max 100 keywords per session.
+   */
+  @JsonProperty("keywords")
+  public Optional<String> getKeywords() {
+    return keywords;
+  }
+
+  /**
+   * @return When false, disables automatic word-count-based finalization (use with itn_normalize for agentic pipelines that control finalization manually).
+   */
+  @JsonProperty("finalize_on_words")
+  public Optional<PulseStreamFinalizeOnWords> getFinalizeOnWords() {
+    return finalizeOnWords;
+  }
+
+  /**
+   * @return Maximum number of words before forced finalization.
+   */
+  @JsonProperty("max_words")
+  public Optional<Integer> getMaxWords() {
+    return maxWords;
+  }
+
   @java.lang.Override
   public boolean equals(Object other) {
     if (this == other) return true;
@@ -105,12 +227,12 @@ public final class PulseSttStreamingConnectOptions {
   }
 
   private boolean equalTo(PulseSttStreamingConnectOptions other) {
-    return language.equals(other.language) && encoding.equals(other.encoding) && sampleRate.equals(other.sampleRate) && wordTimestamps.equals(other.wordTimestamps) && vadEvents.equals(other.vadEvents);
+    return language.equals(other.language) && encoding.equals(other.encoding) && sampleRate.equals(other.sampleRate) && wordTimestamps.equals(other.wordTimestamps) && vadEvents.equals(other.vadEvents) && format.equals(other.format) && itnNormalize.equals(other.itnNormalize) && sentenceTimestamps.equals(other.sentenceTimestamps) && diarize.equals(other.diarize) && redactPii.equals(other.redactPii) && redactPci.equals(other.redactPci) && eouTimeoutMs.equals(other.eouTimeoutMs) && keywords.equals(other.keywords) && finalizeOnWords.equals(other.finalizeOnWords) && maxWords.equals(other.maxWords);
   }
 
   @java.lang.Override
   public int hashCode() {
-    return Objects.hash(this.language, this.encoding, this.sampleRate, this.wordTimestamps, this.vadEvents);
+    return Objects.hash(this.language, this.encoding, this.sampleRate, this.wordTimestamps, this.vadEvents, this.format, this.itnNormalize, this.sentenceTimestamps, this.diarize, this.redactPii, this.redactPci, this.eouTimeoutMs, this.keywords, this.finalizeOnWords, this.maxWords);
   }
 
   @java.lang.Override
@@ -136,6 +258,26 @@ public final class PulseSttStreamingConnectOptions {
 
     private Optional<PulseStreamVadEvents> vadEvents = Optional.empty();
 
+    private Optional<PulseStreamFormat> format = Optional.empty();
+
+    private Optional<PulseStreamItnNormalize> itnNormalize = Optional.empty();
+
+    private Optional<PulseStreamSentenceTimestamps> sentenceTimestamps = Optional.empty();
+
+    private Optional<PulseStreamDiarize> diarize = Optional.empty();
+
+    private Optional<PulseStreamRedactPii> redactPii = Optional.empty();
+
+    private Optional<PulseStreamRedactPci> redactPci = Optional.empty();
+
+    private Optional<Integer> eouTimeoutMs = Optional.empty();
+
+    private Optional<String> keywords = Optional.empty();
+
+    private Optional<PulseStreamFinalizeOnWords> finalizeOnWords = Optional.empty();
+
+    private Optional<Integer> maxWords = Optional.empty();
+
     @JsonAnySetter
     private Map<String, Object> additionalProperties = new HashMap<>();
 
@@ -148,6 +290,16 @@ public final class PulseSttStreamingConnectOptions {
       sampleRate(other.getSampleRate());
       wordTimestamps(other.getWordTimestamps());
       vadEvents(other.getVadEvents());
+      format(other.getFormat());
+      itnNormalize(other.getItnNormalize());
+      sentenceTimestamps(other.getSentenceTimestamps());
+      diarize(other.getDiarize());
+      redactPii(other.getRedactPii());
+      redactPci(other.getRedactPci());
+      eouTimeoutMs(other.getEouTimeoutMs());
+      keywords(other.getKeywords());
+      finalizeOnWords(other.getFinalizeOnWords());
+      maxWords(other.getMaxWords());
       return this;
     }
 
@@ -236,8 +388,178 @@ public final class PulseSttStreamingConnectOptions {
       return this;
     }
 
+    /**
+     * <p>Enable punctuation and capitalization formatting in transcript responses.</p>
+     */
+    @JsonSetter(
+        value = "format",
+        nulls = Nulls.SKIP
+    )
+    public Builder format(Optional<PulseStreamFormat> format) {
+      this.format = format;
+      return this;
+    }
+
+    public Builder format(PulseStreamFormat format) {
+      this.format = Optional.ofNullable(format);
+      return this;
+    }
+
+    /**
+     * <p>Inverse Text Normalization — convert spoken-form numbers, dates, currencies, phone numbers into written form in finalized transcripts.</p>
+     */
+    @JsonSetter(
+        value = "itn_normalize",
+        nulls = Nulls.SKIP
+    )
+    public Builder itnNormalize(Optional<PulseStreamItnNormalize> itnNormalize) {
+      this.itnNormalize = itnNormalize;
+      return this;
+    }
+
+    public Builder itnNormalize(PulseStreamItnNormalize itnNormalize) {
+      this.itnNormalize = Optional.ofNullable(itnNormalize);
+      return this;
+    }
+
+    /**
+     * <p>Include sentence-level timestamps (utterances) in transcription.</p>
+     */
+    @JsonSetter(
+        value = "sentence_timestamps",
+        nulls = Nulls.SKIP
+    )
+    public Builder sentenceTimestamps(Optional<PulseStreamSentenceTimestamps> sentenceTimestamps) {
+      this.sentenceTimestamps = sentenceTimestamps;
+      return this;
+    }
+
+    public Builder sentenceTimestamps(PulseStreamSentenceTimestamps sentenceTimestamps) {
+      this.sentenceTimestamps = Optional.ofNullable(sentenceTimestamps);
+      return this;
+    }
+
+    /**
+     * <p>Enable speaker diarization to identify different speakers in the audio.</p>
+     */
+    @JsonSetter(
+        value = "diarize",
+        nulls = Nulls.SKIP
+    )
+    public Builder diarize(Optional<PulseStreamDiarize> diarize) {
+      this.diarize = diarize;
+      return this;
+    }
+
+    public Builder diarize(PulseStreamDiarize diarize) {
+      this.diarize = Optional.ofNullable(diarize);
+      return this;
+    }
+
+    /**
+     * <p>Redact personally identifiable information (name, address, etc).</p>
+     */
+    @JsonSetter(
+        value = "redact_pii",
+        nulls = Nulls.SKIP
+    )
+    public Builder redactPii(Optional<PulseStreamRedactPii> redactPii) {
+      this.redactPii = redactPii;
+      return this;
+    }
+
+    public Builder redactPii(PulseStreamRedactPii redactPii) {
+      this.redactPii = Optional.ofNullable(redactPii);
+      return this;
+    }
+
+    /**
+     * <p>Redact payment card information (credit card, CVV, account number, etc).</p>
+     */
+    @JsonSetter(
+        value = "redact_pci",
+        nulls = Nulls.SKIP
+    )
+    public Builder redactPci(Optional<PulseStreamRedactPci> redactPci) {
+      this.redactPci = redactPci;
+      return this;
+    }
+
+    public Builder redactPci(PulseStreamRedactPci redactPci) {
+      this.redactPci = Optional.ofNullable(redactPci);
+      return this;
+    }
+
+    /**
+     * <p>Milliseconds to wait after speech ends before flushing the transcript (end-of-utterance).</p>
+     */
+    @JsonSetter(
+        value = "eou_timeout_ms",
+        nulls = Nulls.SKIP
+    )
+    public Builder eouTimeoutMs(Optional<Integer> eouTimeoutMs) {
+      this.eouTimeoutMs = eouTimeoutMs;
+      return this;
+    }
+
+    public Builder eouTimeoutMs(Integer eouTimeoutMs) {
+      this.eouTimeoutMs = Optional.ofNullable(eouTimeoutMs);
+      return this;
+    }
+
+    /**
+     * <p>Comma-separated words/phrases to boost, each optionally followed by :INTENSIFIER (e.g. NVIDIA:5,Jensen). Max 100 keywords per session.</p>
+     */
+    @JsonSetter(
+        value = "keywords",
+        nulls = Nulls.SKIP
+    )
+    public Builder keywords(Optional<String> keywords) {
+      this.keywords = keywords;
+      return this;
+    }
+
+    public Builder keywords(String keywords) {
+      this.keywords = Optional.ofNullable(keywords);
+      return this;
+    }
+
+    /**
+     * <p>When false, disables automatic word-count-based finalization (use with itn_normalize for agentic pipelines that control finalization manually).</p>
+     */
+    @JsonSetter(
+        value = "finalize_on_words",
+        nulls = Nulls.SKIP
+    )
+    public Builder finalizeOnWords(Optional<PulseStreamFinalizeOnWords> finalizeOnWords) {
+      this.finalizeOnWords = finalizeOnWords;
+      return this;
+    }
+
+    public Builder finalizeOnWords(PulseStreamFinalizeOnWords finalizeOnWords) {
+      this.finalizeOnWords = Optional.ofNullable(finalizeOnWords);
+      return this;
+    }
+
+    /**
+     * <p>Maximum number of words before forced finalization.</p>
+     */
+    @JsonSetter(
+        value = "max_words",
+        nulls = Nulls.SKIP
+    )
+    public Builder maxWords(Optional<Integer> maxWords) {
+      this.maxWords = maxWords;
+      return this;
+    }
+
+    public Builder maxWords(Integer maxWords) {
+      this.maxWords = Optional.ofNullable(maxWords);
+      return this;
+    }
+
     public PulseSttStreamingConnectOptions build() {
-      return new PulseSttStreamingConnectOptions(language, encoding, sampleRate, wordTimestamps, vadEvents, additionalProperties);
+      return new PulseSttStreamingConnectOptions(language, encoding, sampleRate, wordTimestamps, vadEvents, format, itnNormalize, sentenceTimestamps, diarize, redactPii, redactPci, eouTimeoutMs, keywords, finalizeOnWords, maxWords, additionalProperties);
     }
 
     public Builder additionalProperty(String key, Object value) {

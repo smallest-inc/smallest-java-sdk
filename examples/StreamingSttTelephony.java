@@ -4,6 +4,8 @@ import ai.smallest.SmallestAI;
 import ai.smallest.resources.waves.pulsesttstreaming.types.PulseCloseStreamSignalMessage;
 import ai.smallest.resources.waves.pulsesttstreaming.types.PulseCloseStreamSignalMessageType;
 import ai.smallest.resources.waves.pulsesttstreaming.types.PulseStreamEncoding;
+import ai.smallest.resources.waves.pulsesttstreaming.types.PulseStreamFormat;
+import ai.smallest.resources.waves.pulsesttstreaming.types.PulseStreamItnNormalize;
 import ai.smallest.resources.waves.pulsesttstreaming.types.PulseTranscriptionResponseMessage;
 import ai.smallest.resources.waves.pulsesttstreaming.websocket.PulseSttStreamingConnectOptions;
 import ai.smallest.resources.waves.pulsesttstreaming.websocket.PulseSttStreamingWebSocketClient;
@@ -51,9 +53,17 @@ public final class StreamingSttTelephony {
     /** Open the socket. Match encoding + sampleRate to your RTP leg. */
     public void start() throws Exception {
       ws.connect(PulseSttStreamingConnectOptions.builder()
+          // --- required: match these to your audio ---
           .language("en")                       // set explicitly; do not rely on the default
           .encoding(PulseStreamEncoding.MULAW)  // G.711 u-law telephony; use LINEAR16 if you decode to PCM16 first
           .sampleRate(8000)                     // telephony; server does NOT resample — must match your audio
+          // --- recommended for readable, booking-friendly transcripts ---
+          .format(PulseStreamFormat.TRUE)               // punctuation + capitalization
+          .itnNormalize(PulseStreamItnNormalize.TRUE)   // numbers/dates/currency in written form
+          // --- other optional knobs available on connect():
+          //     wordTimestamps, sentenceTimestamps, vadEvents, diarize,
+          //     redactPii, redactPci, keywords("Delhi,Mumbai"), eouTimeoutMs(800),
+          //     finalizeOnWords, maxWords
           .build()).get();
     }
 

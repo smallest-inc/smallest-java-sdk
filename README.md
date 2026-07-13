@@ -19,7 +19,7 @@ repositories {
     maven { url 'https://jitpack.io' }
 }
 dependencies {
-    implementation 'com.github.smallest-inc:smallest-java-sdk:0.1.3'
+    implementation 'com.github.smallest-inc:smallest-java-sdk:0.1.4'
 }
 ```
 
@@ -35,7 +35,7 @@ dependencies {
 <dependency>
   <groupId>com.github.smallest-inc</groupId>
   <artifactId>smallest-java-sdk</artifactId>
-  <version>0.1.3</version>
+  <version>0.1.4</version>
 </dependency>
 ```
 
@@ -119,4 +119,4 @@ A full runnable telephony (8 kHz μ-law) example is in
 
 ## Status
 
-Initial `0.1.3` snapshot. Real-time streaming STT/TTS WebSocket clients are included and evolving.
+Initial `0.1.4` snapshot. Real-time streaming STT/TTS WebSocket clients are included and evolving.

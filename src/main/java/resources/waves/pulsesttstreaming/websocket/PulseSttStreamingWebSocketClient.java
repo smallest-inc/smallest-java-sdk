@@ -124,6 +124,36 @@ public class PulseSttStreamingWebSocketClient implements AutoCloseable {
     if (options.getVadEvents() != null && options.getVadEvents().isPresent()) {
       urlBuilder.addQueryParameter("vad_events", String.valueOf(options.getVadEvents().get()));
     }
+    if (options.getFormat() != null && options.getFormat().isPresent()) {
+      urlBuilder.addQueryParameter("format", String.valueOf(options.getFormat().get()));
+    }
+    if (options.getItnNormalize() != null && options.getItnNormalize().isPresent()) {
+      urlBuilder.addQueryParameter("itn_normalize", String.valueOf(options.getItnNormalize().get()));
+    }
+    if (options.getSentenceTimestamps() != null && options.getSentenceTimestamps().isPresent()) {
+      urlBuilder.addQueryParameter("sentence_timestamps", String.valueOf(options.getSentenceTimestamps().get()));
+    }
+    if (options.getDiarize() != null && options.getDiarize().isPresent()) {
+      urlBuilder.addQueryParameter("diarize", String.valueOf(options.getDiarize().get()));
+    }
+    if (options.getRedactPii() != null && options.getRedactPii().isPresent()) {
+      urlBuilder.addQueryParameter("redact_pii", String.valueOf(options.getRedactPii().get()));
+    }
+    if (options.getRedactPci() != null && options.getRedactPci().isPresent()) {
+      urlBuilder.addQueryParameter("redact_pci", String.valueOf(options.getRedactPci().get()));
+    }
+    if (options.getEouTimeoutMs() != null && options.getEouTimeoutMs().isPresent()) {
+      urlBuilder.addQueryParameter("eou_timeout_ms", String.valueOf(options.getEouTimeoutMs().get()));
+    }
+    if (options.getKeywords() != null && options.getKeywords().isPresent()) {
+      urlBuilder.addQueryParameter("keywords", String.valueOf(options.getKeywords().get()));
+    }
+    if (options.getFinalizeOnWords() != null && options.getFinalizeOnWords().isPresent()) {
+      urlBuilder.addQueryParameter("finalize_on_words", String.valueOf(options.getFinalizeOnWords().get()));
+    }
+    if (options.getMaxWords() != null && options.getMaxWords().isPresent()) {
+      urlBuilder.addQueryParameter("max_words", String.valueOf(options.getMaxWords().get()));
+    }
     Request.Builder requestBuilder = new Request.Builder().url(urlBuilder.build());
     clientOptions.headers((RequestOptions) null).forEach(requestBuilder::addHeader);
     final Request request = requestBuilder.build();
