@@ -10,12 +10,33 @@ Generated with [Fern](https://buildwithfern.com) from the same API definition as
 
 ## Install
 
-The SDK depends on OkHttp and Jackson. With Gradle:
+Available via [JitPack](https://jitpack.io). OkHttp and Jackson are pulled in transitively.
 
+**Gradle**
 ```gradle
-dependencies {
-    implementation 'ai.smallest:smallest-java-sdk:0.1.1'
+repositories {
+    mavenCentral()
+    maven { url 'https://jitpack.io' }
 }
+dependencies {
+    implementation 'com.github.smallest-inc:smallest-java-sdk:v0.1.1'
+}
+```
+
+**Maven**
+```xml
+<repositories>
+  <repository>
+    <id>jitpack.io</id>
+    <url>https://jitpack.io</url>
+  </repository>
+</repositories>
+
+<dependency>
+  <groupId>com.github.smallest-inc</groupId>
+  <artifactId>smallest-java-sdk</artifactId>
+  <version>v0.1.1</version>
+</dependency>
 ```
 
 ## Client
