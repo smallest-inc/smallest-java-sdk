@@ -19,7 +19,7 @@ repositories {
     maven { url 'https://jitpack.io' }
 }
 dependencies {
-    implementation 'com.github.smallest-inc:smallest-java-sdk:v0.1.1'
+    implementation 'com.github.smallest-inc:smallest-java-sdk:v0.1.2'
 }
 ```
 
@@ -35,7 +35,7 @@ dependencies {
 <dependency>
   <groupId>com.github.smallest-inc</groupId>
   <artifactId>smallest-java-sdk</artifactId>
-  <version>v0.1.1</version>
+  <version>v0.1.2</version>
 </dependency>
 ```
 
