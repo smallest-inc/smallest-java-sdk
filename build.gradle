@@ -23,6 +23,13 @@ dependencies {
     api 'com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.18.2'
     api 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.2'
     compileOnly 'org.jetbrains:annotations:24.1.0'
+
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.11.3'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+test {
+    useJUnitPlatform()
 }
 
 tasks.withType(Javadoc).configureEach {
