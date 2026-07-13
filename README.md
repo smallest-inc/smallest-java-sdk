@@ -119,7 +119,7 @@ stt.transcribeStreamingPulseSendFinalize(
 Other session options on the builder: `sentenceTimestamps`, `diarize`, `redactPii`, `redactPci`,
 `punctuate`, `capitalize`, `format`, `itnNormalize`, `endpointing`, `finalizeOnWords`, `maxWords`,
 `wordTimestamps`, `vadEvents`. New server params not yet typed can be passed with
-`.additionalProperty("name", value)` — they are forwarded as query parameters.
+`.additionalProperty("name", value)`: they are forwarded as query parameters.
 
 A full runnable telephony (8 kHz μ-law) example is in
 [`examples/StreamingSttTelephony.java`](examples/StreamingSttTelephony.java).
@@ -138,7 +138,7 @@ recorded in `.fern/metadata.json`.
 into the Fern CI pipeline (`generators.yml` has no `java-sdk` group), and a small set of
 generated files carry manual fixes that are not yet in the spec or generator. The full
 list, with the reason for each patch and where it must be upstreamed, lives in
-[`.fernignore`](.fernignore) — the same convention the
+[`.fernignore`](.fernignore), the same convention the
 [Python SDK](https://github.com/smallest-inc/smallest-python-sdk) uses to protect
 customer-owned files from regeneration.
 
