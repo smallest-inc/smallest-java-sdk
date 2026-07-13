@@ -1,0 +1,45 @@
+# Files Fern must not overwrite on regeneration.
+# Mirrors the convention used in smallest-python-sdk/.fernignore.
+
+# Hand-written repo scaffolding (generator never produces these)
+README.md
+CONTRIBUTING.md
+build.gradle
+settings.gradle
+jitpack.yml
+gradle/**
+gradlew
+gradlew.bat
+.gitignore
+.fernignore
+
+# Hand-written examples
+examples/**
+
+# --- Hand-patched GENERATED files (temporary; upstream before removing) ---
+# These four files carry manual fixes that are NOT yet in the Fern spec or
+# generator. Regenerating without upstreaming first will silently reintroduce
+# the bugs. Tracking:
+#
+# 1. PulseSttStreamingWebSocketClient.java
+#    - VAD event routing by `type` discriminator (generator emitted
+#      presence-based checks that sent speech_ended to the speech_started
+#      handler). Needs a fern-java-sdk generator fix; report to Fern.
+#    - Streaming session query params + additionalProperties passthrough in
+#      connect(). Upstream: expose the full ws query binding from
+#      fern/apis/waves/asyncapi/pulse-stt-ws(-overrides).yml in
+#      smallest-ai-documentation so the generator emits these.
+#    - Null guard in disconnect() when connect() was never called.
+# 2. PulseSttStreamingConnectOptions.java
+#    - Typed options for keywords, eou_timeout_ms, endpointing,
+#      sentence_timestamps, redact_pii, redact_pci, diarize, format,
+#      punctuate, capitalize, itn_normalize, finalize_on_words, max_words.
+#      Same upstream path as above.
+# 3. RawWavesClient.java / 4. AsyncRawWavesClient.java
+#    - transcribePulse uses a byte[]-backed RequestBody so the
+#      RetryInterceptor can re-send it (one-shot InputStream body sent an
+#      empty body on 408/429/5xx retries). Generator fix; report to Fern.
+src/main/java/resources/waves/pulsesttstreaming/websocket/PulseSttStreamingWebSocketClient.java
+src/main/java/resources/waves/pulsesttstreaming/websocket/PulseSttStreamingConnectOptions.java
+src/main/java/resources/waves/RawWavesClient.java
+src/main/java/resources/waves/AsyncRawWavesClient.java

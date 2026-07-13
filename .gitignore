@@ -1,5 +1,6 @@
 .gradle/
 build/
+temp/
 *.class
 .DS_Store
 .idea/

@@ -127,6 +127,33 @@ Migrating from Azure Speech SDK? See
 [`examples/AzureStyleSttRecognizer.java`](examples/AzureStyleSttRecognizer.java) for a
 recognizing/recognized/canceled event-style wrapper.
 
+## Generation and maintenance
+
+This SDK is generated with `fernapi/fern-java-sdk` from the Fern API definition in
+[smallest-ai-documentation](https://github.com/smallest-inc/smallest-ai-documentation)
+(`fern/apis/unified`). Generation metadata (generator version, origin spec commit) is
+recorded in `.fern/metadata.json`.
+
+**Current state: generated manually, with hand patches.** The Java SDK is not yet wired
+into the Fern CI pipeline (`generators.yml` has no `java-sdk` group), and a small set of
+generated files carry manual fixes that are not yet in the spec or generator. The full
+list, with the reason for each patch and where it must be upstreamed, lives in
+[`.fernignore`](.fernignore) — the same convention the
+[Python SDK](https://github.com/smallest-inc/smallest-python-sdk) uses to protect
+customer-owned files from regeneration.
+
+Rules for maintainers:
+
+- Do not regenerate over the files listed in `.fernignore` until their patches are
+  upstreamed (spec changes go to `smallest-ai-documentation`; generator bugs go to Fern
+  support). Regenerating first silently reintroduces known bugs (see `.fernignore`).
+- Hand-written files (`examples/`, `build.gradle`, this README, etc.) are always
+  customer-owned and listed in `.fernignore`.
+- End state: add a `java-sdk` group to `fern/apis/unified/generators.yml` with
+  `github: mode: pull-request` (like the Python SDK), upstream the streaming session
+  params into the AsyncAPI ws bindings, and shrink `.fernignore` down to the
+  hand-written files only.
+
 ## Status
 
-Initial `0.1.3` snapshot. Real-time streaming STT/TTS WebSocket clients are included and evolving.
+Initial `0.1.x` snapshot. Real-time streaming STT/TTS WebSocket clients are included and evolving.
