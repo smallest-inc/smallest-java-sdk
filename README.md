@@ -119,4 +119,4 @@ A full runnable telephony (8 kHz μ-law) example is in
 
 ## Status
 
-Initial `0.1.1` snapshot. Real-time streaming STT/TTS WebSocket clients are included and evolving.
+Initial `0.1.2` snapshot. Real-time streaming STT/TTS WebSocket clients are included and evolving.
