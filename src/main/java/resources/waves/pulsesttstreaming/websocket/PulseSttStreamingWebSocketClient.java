@@ -69,9 +69,9 @@ public class PulseSttStreamingWebSocketClient implements AutoCloseable {
 
   private volatile Consumer<PulseTranscriptionResponseMessage> receiveTranscribeStreamingPulseHandler;
 
-  private volatile Consumer<PulseSpeechStartedEventMessage> receiveVadEventsStreamingPulseHandler;
+  private volatile Consumer<PulseSpeechStartedEventMessage> receiveSpeechStartedStreamingPulseHandler;
 
-  private volatile Consumer<PulseSpeechEndedEventMessage> receiveVadEventsStreamingPulseEndedHandler;
+  private volatile Consumer<PulseSpeechEndedEventMessage> receiveSpeechEndedStreamingPulseHandler;
 
   /**
    * Creates a new async WebSocket client for the pulseSttStreaming channel.
@@ -85,8 +85,9 @@ public class PulseSttStreamingWebSocketClient implements AutoCloseable {
   /**
    * Establishes the WebSocket connection asynchronously with automatic reconnection.
    * @return a CompletableFuture that completes when the connection is established
+   * @param options connection options including query parameters
    */
-  public CompletableFuture<Void> connect() {
+  public CompletableFuture<Void> connect(PulseSttStreamingConnectOptions options) {
     connectionFuture = new CompletableFuture<>();
     String baseUrl = clientOptions.environment().getWavesWsURL();
     String fullPath = "/waves/v1/pulse/get_text";
@@ -108,6 +109,21 @@ public class PulseSttStreamingWebSocketClient implements AutoCloseable {
       throw new IllegalArgumentException("Invalid WebSocket URL: " + baseUrl + fullPath);
     }
     HttpUrl.Builder urlBuilder = parsedUrl.newBuilder();
+    if (options.getLanguage() != null && options.getLanguage().isPresent()) {
+      urlBuilder.addQueryParameter("language", String.valueOf(options.getLanguage().get()));
+    }
+    if (options.getEncoding() != null && options.getEncoding().isPresent()) {
+      urlBuilder.addQueryParameter("encoding", String.valueOf(options.getEncoding().get()));
+    }
+    if (options.getSampleRate() != null && options.getSampleRate().isPresent()) {
+      urlBuilder.addQueryParameter("sample_rate", String.valueOf(options.getSampleRate().get()));
+    }
+    if (options.getWordTimestamps() != null && options.getWordTimestamps().isPresent()) {
+      urlBuilder.addQueryParameter("word_timestamps", String.valueOf(options.getWordTimestamps().get()));
+    }
+    if (options.getVadEvents() != null && options.getVadEvents().isPresent()) {
+      urlBuilder.addQueryParameter("vad_events", String.valueOf(options.getVadEvents().get()));
+    }
     Request.Builder requestBuilder = new Request.Builder().url(urlBuilder.build());
     clientOptions.headers((RequestOptions) null).forEach(requestBuilder::addHeader);
     final Request request = requestBuilder.build();
@@ -158,6 +174,14 @@ public class PulseSttStreamingWebSocketClient implements AutoCloseable {
     };
     reconnectingListener.connect();
     return connectionFuture;
+  }
+
+  /**
+   * Establishes the WebSocket connection asynchronously with default options.
+   * @return a CompletableFuture that completes when the connection is established
+   */
+  public CompletableFuture<Void> connect() {
+    return connect(PulseSttStreamingConnectOptions.builder().build());
   }
 
   /**
@@ -233,16 +257,16 @@ public class PulseSttStreamingWebSocketClient implements AutoCloseable {
    * Registers a handler for pulseSpeechStartedEvent.message messages from the server.
    * @param handler the handler to invoke when a message is received
    */
-  public void receiveVadEventsStreamingPulse(Consumer<PulseSpeechStartedEventMessage> handler) {
-    this.receiveVadEventsStreamingPulseHandler = handler;
+  public void receiveSpeechStartedStreamingPulse(Consumer<PulseSpeechStartedEventMessage> handler) {
+    this.receiveSpeechStartedStreamingPulseHandler = handler;
   }
 
   /**
    * Registers a handler for pulseSpeechEndedEvent.message messages from the server.
    * @param handler the handler to invoke when a message is received
    */
-  public void receiveVadEventsStreamingPulseSpeechEnded(Consumer<PulseSpeechEndedEventMessage> handler) {
-    this.receiveVadEventsStreamingPulseEndedHandler = handler;
+  public void receiveSpeechEndedStreamingPulse(Consumer<PulseSpeechEndedEventMessage> handler) {
+    this.receiveSpeechEndedStreamingPulseHandler = handler;
   }
 
   /**
@@ -339,14 +363,14 @@ public class PulseSttStreamingWebSocketClient implements AutoCloseable {
       if (node.has("type")
       && node.has("session_id")
       && node.has("timestamp")) {
-        PulseSpeechStartedEventMessage receiveVadEventsStreamingPulseHandlerEvent = null;
+        PulseSpeechStartedEventMessage receiveSpeechStartedStreamingPulseHandlerEvent = null;
         try {
-          receiveVadEventsStreamingPulseHandlerEvent = objectMapper.treeToValue(node, PulseSpeechStartedEventMessage.class);
+          receiveSpeechStartedStreamingPulseHandlerEvent = objectMapper.treeToValue(node, PulseSpeechStartedEventMessage.class);
         } catch (Exception e) {
         }
-        if (receiveVadEventsStreamingPulseHandlerEvent != null) {
-          if (receiveVadEventsStreamingPulseHandler != null) {
-            receiveVadEventsStreamingPulseHandler.accept(receiveVadEventsStreamingPulseHandlerEvent);
+        if (receiveSpeechStartedStreamingPulseHandlerEvent != null) {
+          if (receiveSpeechStartedStreamingPulseHandler != null) {
+            receiveSpeechStartedStreamingPulseHandler.accept(receiveSpeechStartedStreamingPulseHandlerEvent);
           }
           return;
         }
@@ -354,14 +378,14 @@ public class PulseSttStreamingWebSocketClient implements AutoCloseable {
       if (node.has("type")
       && node.has("session_id")
       && node.has("timestamp")) {
-        PulseSpeechEndedEventMessage receiveVadEventsStreamingPulseHandlerEvent = null;
+        PulseSpeechEndedEventMessage receiveSpeechEndedStreamingPulseHandlerEvent = null;
         try {
-          receiveVadEventsStreamingPulseHandlerEvent = objectMapper.treeToValue(node, PulseSpeechEndedEventMessage.class);
+          receiveSpeechEndedStreamingPulseHandlerEvent = objectMapper.treeToValue(node, PulseSpeechEndedEventMessage.class);
         } catch (Exception e) {
         }
-        if (receiveVadEventsStreamingPulseHandlerEvent != null) {
-          if (receiveVadEventsStreamingPulseEndedHandler != null) {
-            receiveVadEventsStreamingPulseEndedHandler.accept(receiveVadEventsStreamingPulseHandlerEvent);
+        if (receiveSpeechEndedStreamingPulseHandlerEvent != null) {
+          if (receiveSpeechEndedStreamingPulseHandler != null) {
+            receiveSpeechEndedStreamingPulseHandler.accept(receiveSpeechEndedStreamingPulseHandlerEvent);
           }
           return;
         }
