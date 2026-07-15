@@ -4,17 +4,23 @@ plugins {
 }
 
 group = 'ai.smallest'
-version = '0.1.4'
+version = '0.1.5'
 
 repositories {
     mavenCentral()
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
     withSourcesJar()
     withJavadocJar()
+}
+
+// Compile against the Java 11 API surface (not just the bytecode level) so the SDK
+// runs on Java 11 runtimes and post-11 API calls fail at build time, not at runtime.
+tasks.withType(JavaCompile).configureEach {
+    options.release = 11
 }
 
 dependencies {
